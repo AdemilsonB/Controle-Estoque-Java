@@ -3,7 +3,7 @@
 Aplicação criada com Java durante o ano de 2021.
 Desenvolvimento completo, com modelo Model, View e Controller(MVC), a aplicação foi desenvolvida com para o controle de estoque de uma loja.
 <br>
-<h2>Models</h2>:
+<h2>Models:</h2>
 Pessoa, Funcionario, Fornecedor, Produto, Categoria, Colecao, Fluxo, Endereco e Saida.
 <br>
 <h2>View:</h2>
