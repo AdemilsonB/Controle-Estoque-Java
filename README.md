@@ -1,7 +1,7 @@
 # Controle de Estoque com Java
 
-<h3><Aplicação criada com Java durante o ano de 2021.</h3>
-Desenvolvimento completo, com modelo Model, View e Controller(MVC), a aplicação foi desenvolvida para o controle de estoque de uma loja.
+<h3>Aplicação criada com Java durante o ano de 2021.
+Desenvolvimento completo, com modelo Model, View e Controller(MVC), a aplicação foi desenvolvida para o controle de estoque de uma loja.</h3>
 <br>
 <h2>Models:</h2>
 - Pessoa<br>
