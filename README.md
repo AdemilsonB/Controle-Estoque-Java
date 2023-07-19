@@ -2,6 +2,13 @@
 
 <h3>Aplicação criada com Java durante o ano de 2021.<br>
 Desenvolvimento completo, com modelo Model, View e Controller(MVC), a aplicação foi desenvolvida para o controle de estoque de uma loja.</h3>
+
+<h2>Ferramentas e Tecnologias ultilizadas para o desenvolvimento:</h2>
+- IDE Eclipse;<br>
+- Java LTS (Long-Term Support);<br>
+- GitHub - Versionamento de código;<br>
+- Kanbanflow - Planejamento e organização de desenvolvimento;<br>
+
 <h2>Models:</h2>
 - Pessoa<br>
 - Funcionario<br>
