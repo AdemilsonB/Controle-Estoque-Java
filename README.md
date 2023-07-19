@@ -7,12 +7,12 @@ Desenvolvimento completo, com modelo Model, View e Controller(MVC), a aplicaçã
 Pessoa, Funcionario, Fornecedor, Produto, Categoria, Colecao, Fluxo, Endereco e Saida.
 <br>
 <h2>View:</h2>
-- Principal, MenuFornecedor, MenuProduto, MenuRegistroDeEntrada, MenuRegistroDeSaida, MostrarControleEstoque;<br>
-- CadastrarFornecedor, EditarFornecedor, ListarFornecedores, DeletarFornecedor;
-- CadastrarFuncionario, ListarFuncionario, DeletarFuncionario;
-- CadastrarProduto, EditarProduto, ListarProdutos, DeletarProduto;
-- RegistrarEntrada, ListarEntradas, DeletarEntrada;
-- RegistrarSaida, ListarSaidas, DeletarSaida;
+- Principal, MenuFornecedor, MenuProduto, MenuRegistroDeEntrada, MenuRegistroDeSaida e MostrarControleEstoque;<br>
+- CadastrarFornecedor, EditarFornecedor, ListarFornecedores e DeletarFornecedor;<br>
+- CadastrarFuncionario, ListarFuncionario e DeletarFuncionario;<br>
+- CadastrarProduto, EditarProduto, ListarProdutos e DeletarProduto;<br>
+- RegistrarEntrada, ListarEntradas e DeletarEntrada;<br>
+- RegistrarSaida, ListarSaidas e DeletarSaida;
 <br>
 <h2>Controller: </h2>
 EntradaController, FornecedorController, FuncionarioController, ProdutoController e SaidaController.
