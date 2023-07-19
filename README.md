@@ -5,7 +5,7 @@ Desenvolvimento completo, com modelo Model, View e Controller(MVC), a aplicaçã
 
 <h2>Ferramentas e Tecnologias ultilizadas para o desenvolvimento:</h2>
 - IDE Eclipse;<br>
-- Java LTS (Long-Term Support);<br>
+- Java 11 LTS (Long-Term Support);<br>
 - GitHub - Versionamento de código;<br>
 - Kanbanflow - Planejamento e organização de desenvolvimento;<br>
 
