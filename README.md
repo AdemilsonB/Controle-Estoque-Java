@@ -46,7 +46,7 @@ Na funcionalidade de edição, o usuário tem a capacidade de atualizar os dados
 
 O sistema também oferece a opção de exclusão de registros, permitindo ao usuário remover dados que já não são mais necessários. Essa funcionalidade é realizada com cuidado para evitar exclusões acidentais e garantir a segurança dos dados.<br>
 
-Uma das características distintivas do sistema é que a busca de registros não é feita em um banco de dados tradicional, mas sim em listas armazenadas em memória durante a execução do programa. Isso proporciona uma resposta rápida e eficiente, tornando o processo de busca ágil e eficaz.<br>
+Uma das características distintivas do sistema é que a <strong>busca de registros não é feita em um banco de dados tradicional</strong>, mas sim em listas armazenadas em memória durante a execução do programa. Isso proporciona uma resposta rápida e eficiente, tornando o processo de busca ágil e eficaz.<br>
 
 As telas foram projetadas de forma separada para cada uma das ações, o que facilita o entendimento do usuário e oferece uma experiência de uso mais intuitiva. Essa organização também torna a manutenção do projeto mais simples e organizada.<br>
 
