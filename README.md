@@ -36,5 +36,19 @@ Desenvolvimento completo, com modelo Model, View e Controller(MVC), a aplicaçã
 - SaidaController<br>
 
 <h2>Descrição de Funcionalidades do sistema:</h2>
-É possível cadastrar, editar, listar e deletar registros da base de dados, existem verificações e validações para aplicar essas ações dentro do sistema. Existem telas para todas as ações separadamente, permitindo maior entendimento por parte do cliente e maior organização para manutenção no projeto. 
+O sistema foi desenvolvido para oferecer diversas funcionalidades que possibilitam o gerenciamento eficiente dos registros. Com ele, é possível realizar as operações de cadastro, listagem, edição e exclusão de dados de forma intuitiva e organizada.<br>
+
+No módulo de cadastro, o usuário pode inserir informações relevantes sobre os registros desejados. O sistema realiza verificações e validações para garantir a integridade dos dados, assegurando que somente informações corretas e válidas sejam armazenadas.<br>
+
+A tela de listagem permite visualizar todos os registros cadastrados, proporcionando uma visão abrangente de todos os dados presentes no sistema. Isso facilita a identificação rápida e eficiente de informações específicas.<br>
+
+Na funcionalidade de edição, o usuário tem a capacidade de atualizar os dados já cadastrados. Essa opção é especialmente útil para correção de informações desatualizadas ou incorretas, garantindo que os registros estejam sempre precisos.<br>
+
+O sistema também oferece a opção de exclusão de registros, permitindo ao usuário remover dados que já não são mais necessários. Essa funcionalidade é realizada com cuidado para evitar exclusões acidentais e garantir a segurança dos dados.<br>
+
+Uma das características distintivas do sistema é que a busca de registros não é feita em um banco de dados tradicional, mas sim em listas armazenadas em memória durante a execução do programa. Isso proporciona uma resposta rápida e eficiente, tornando o processo de busca ágil e eficaz.<br>
+
+As telas foram projetadas de forma separada para cada uma das ações, o que facilita o entendimento do usuário e oferece uma experiência de uso mais intuitiva. Essa organização também torna a manutenção do projeto mais simples e organizada.<br>
+
+Em resumo, o sistema oferece um conjunto completo de funcionalidades para gerenciamento de registros, garantindo eficiência, organização e facilidade de uso. Com todas essas características, os usuários podem contar com uma ferramenta robusta e eficaz para lidar com suas necessidades de cadastro e gerenciamento de informações.<br>
 
