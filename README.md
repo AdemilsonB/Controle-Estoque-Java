@@ -10,17 +10,17 @@ Desenvolvimento completo, com modelo Model, View e Controller(MVC), a aplicaçã
 - Kanbanflow - Planejamento e organização de desenvolvimento;<br>
 
 <h2>Models:</h2>
-- Pessoa<br>
-- Funcionario<br>
-- Fornecedor<br>
-- Produto<br>
-- Categoria<br>
-- Colecao<br>
-- Fluxo<br>
-- Endereco<br>
-- Saida<br>
+- Pessoa;<br>
+- Funcionario;<br>
+- Fornecedor;<br>
+- Produto;<br>
+- Categoria;<br>
+- Colecao;<br>
+- Fluxo;<br>
+- Endereco;<br>
+- Saida;<br>
 
-<h2>View:</h2>
+<h2>Views:</h2>
 - Principal, MenuFornecedor, MenuProduto, MenuRegistroDeEntrada, MenuRegistroDeSaida e MostrarControleEstoque;<br>
 - CadastrarFornecedor, EditarFornecedor, ListarFornecedores e DeletarFornecedor;<br>
 - CadastrarFuncionario, ListarFuncionario e DeletarFuncionario;<br>
@@ -28,12 +28,12 @@ Desenvolvimento completo, com modelo Model, View e Controller(MVC), a aplicaçã
 - RegistrarEntrada, ListarEntradas e DeletarEntrada;<br>
 - RegistrarSaida, ListarSaidas e DeletarSaida;<br>
 
-<h2>Controller: </h2>
-- EntradaController<br>
-- FornecedorController<br>
-- FuncionarioController<br>
-- ProdutoController<br>
-- SaidaController<br>
+<h2>Controllers: </h2>
+- EntradaController;<br>
+- FornecedorController;<br>
+- FuncionarioController;<br>
+- ProdutoController;<br>
+- SaidaController;<br>
 
 <h2>Descrição de Funcionalidades do sistema:</h2>
 O sistema foi desenvolvido para oferecer diversas funcionalidades que possibilitam o gerenciamento eficiente dos registros. Com ele, é possível realizar as operações de cadastro, listagem, edição e exclusão de dados de forma intuitiva e organizada.<br>
