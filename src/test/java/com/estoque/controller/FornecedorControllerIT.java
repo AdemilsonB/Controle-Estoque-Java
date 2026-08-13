@@ -101,4 +101,15 @@ class FornecedorControllerIT {
         mockMvc.perform(get("/api/v1/fornecedores/999999"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    @WithMockUser(roles = "OPERADOR")
+    void deveRejeitarCriacaoParaOperadorCom403() throws Exception {
+        String corpo = objectMapper.writeValueAsString(new com.estoque.dto.request.FornecedorRequest(
+                "44444444000184", "Fornecedora Operador LTDA", "41988887777", "operador@fornecedora.com",
+                new com.estoque.dto.request.EnderecoRequest("Rua X", "10", "Centro", "Curitiba", "PR", "80000-000")));
+
+        mockMvc.perform(post("/api/v1/fornecedores").contentType("application/json").content(corpo))
+                .andExpect(status().isForbidden());
+    }
 }

@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -51,5 +52,25 @@ class EntradaControllerIT {
         Produto produtoAtualizado = produtoRepository.findById(produto.getId()).orElseThrow();
         assertThat(produtoAtualizado.getQuantidadeEstoque()).isEqualTo(20);
         assertThat(produtoAtualizado.getCustoMedio()).isEqualByComparingTo("5.00");
+    }
+
+    @Test
+    @WithUserDetails(value = "admin@estoque.com", userDetailsServiceBeanName = "userDetailsServiceImpl")
+    void deveListarEntradasPaginado() throws Exception {
+        Categoria categoria = categoriaRepository.save(Categoria.builder().nome("Categoria Entrada IT 2").build());
+        Produto produto = produtoRepository.save(Produto.builder()
+                .codigo("SKU-ENTRADA-IT-2").nome("Produto Entrada IT 2").categoria(categoria)
+                .precoVenda(new BigDecimal("10.00")).estoqueMinimo(1).build());
+
+        String corpo = objectMapper.writeValueAsString(
+                new com.estoque.dto.request.EntradaRequest(produto.getId(), null, 15, new BigDecimal("3.00"), "compra listagem"));
+
+        mockMvc.perform(post("/api/v1/entradas").contentType("application/json").content(corpo))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/v1/entradas"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].tipo").value("ENTRADA"));
     }
 }

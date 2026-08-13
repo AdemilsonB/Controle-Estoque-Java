@@ -118,4 +118,24 @@ class ProdutoControllerIT {
         mockMvc.perform(get("/api/v1/produtos/999999"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    @WithMockUser
+    void deveRetornar400AoBuscarProdutoComIdNaoNumericoEmVezDe500() throws Exception {
+        mockMvc.perform(get("/api/v1/produtos/abc"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "OPERADOR")
+    void deveRejeitarCriacaoParaOperadorCom403() throws Exception {
+        Categoria categoria = categoriaRepository.save(Categoria.builder().nome("Categoria Operador IT").build());
+
+        String corpo = objectMapper.writeValueAsString(new com.estoque.dto.request.ProdutoRequest(
+                "SKU-IT-OPERADOR", "Produto Operador", "desc", categoria.getId(), null, null,
+                new BigDecimal("29.90"), 5));
+
+        mockMvc.perform(post("/api/v1/produtos").contentType("application/json").content(corpo))
+                .andExpect(status().isForbidden());
+    }
 }

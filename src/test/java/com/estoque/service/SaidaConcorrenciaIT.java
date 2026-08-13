@@ -35,11 +35,12 @@ class SaidaConcorrenciaIT {
 
     @Test
     void naoDevePermitirVenderMaisDoQueOEstoqueDisponivelSobConcorrencia() throws Exception {
+        int estoqueInicial = 10;
         Categoria categoria = categoriaRepository.save(Categoria.builder().nome("Categoria Concorrencia IT").build());
         Produto produto = produtoRepository.save(Produto.builder()
                 .codigo("SKU-CONCORRENCIA-IT").nome("Produto Concorrência").categoria(categoria)
                 .precoVenda(new BigDecimal("10.00")).estoqueMinimo(1).build());
-        produto.registrarEntrada(10, new BigDecimal("5.00"));
+        produto.registrarEntrada(estoqueInicial, new BigDecimal("5.00"));
         produtoRepository.saveAndFlush(produto);
 
         int totalThreads = 5;
@@ -80,6 +81,11 @@ class SaidaConcorrenciaIT {
 
         assertThat(produtoFinal.getQuantidadeEstoque()).isGreaterThanOrEqualTo(0);
         assertThat(sucessos.get() + falhasControladas.get()).isEqualTo(totalThreads);
-        assertThat(sucessos.get() * quantidadePorThread).isLessThanOrEqualTo(10);
+        assertThat(sucessos.get() * quantidadePorThread).isLessThanOrEqualTo(estoqueInicial);
+        // Invariante exata: o estoque final deve refletir precisamente o número de saídas que
+        // realmente foram bem-sucedidas — nenhuma perda ou duplicação de atualização (lost update)
+        // sob concorrência é aceitável.
+        assertThat(produtoFinal.getQuantidadeEstoque())
+                .isEqualTo(estoqueInicial - sucessos.get() * quantidadePorThread);
     }
 }
