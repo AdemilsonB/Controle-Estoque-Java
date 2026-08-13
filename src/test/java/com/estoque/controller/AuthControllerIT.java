@@ -62,7 +62,7 @@ class AuthControllerIT {
     void deveRejeitarRequisicaoSemTokenCom401() throws Exception {
         MvcResult result = mockMvc.perform(get("/api/v1/produtos"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andReturn();
 
         // Verify UTF-8 character encoding to prevent mojibake in Portuguese accented characters

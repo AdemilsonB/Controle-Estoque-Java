@@ -62,9 +62,11 @@ public class Produto {
     private BigDecimal precoVenda;
 
     @Column(name = "custo_medio", nullable = false, precision = 12, scale = 2)
+    @Setter(AccessLevel.NONE)
     private BigDecimal custoMedio;
 
     @Column(name = "quantidade_estoque", nullable = false)
+    @Setter(AccessLevel.NONE)
     private int quantidadeEstoque;
 
     @Column(name = "estoque_minimo", nullable = false)
@@ -72,17 +74,21 @@ public class Produto {
 
     @Version
     @Column(name = "version", nullable = false)
+    @Setter(AccessLevel.NONE)
     private long version;
 
     @Column(name = "ativo", nullable = false)
+    @Setter(AccessLevel.NONE)
     private boolean ativo;
 
     @CreatedDate
     @Column(name = "criado_em", nullable = false, updatable = false)
+    @Setter(AccessLevel.NONE)
     private LocalDateTime criadoEm;
 
     @LastModifiedDate
     @Column(name = "atualizado_em", nullable = false)
+    @Setter(AccessLevel.NONE)
     private LocalDateTime atualizadoEm;
 
     @Builder

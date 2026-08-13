@@ -46,7 +46,7 @@ public class EntradaServiceImpl implements EntradaService {
         Funcionario funcionario = funcionarioRepository.findByEmail(emailFuncionarioAutenticado)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Funcionário", emailFuncionarioAutenticado));
         Fornecedor fornecedor = request.fornecedorId() != null
-                ? fornecedorRepository.findById(request.fornecedorId())
+                ? fornecedorRepository.findByIdAndAtivoTrue(request.fornecedorId())
                         .orElseThrow(() -> new RecursoNaoEncontradoException("Fornecedor", request.fornecedorId()))
                 : null;
 

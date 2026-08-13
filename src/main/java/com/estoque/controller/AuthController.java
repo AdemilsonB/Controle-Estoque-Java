@@ -5,7 +5,6 @@ import com.estoque.dto.response.LoginResponse;
 import com.estoque.security.FuncionarioUserDetails;
 import com.estoque.security.JwtService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,14 +16,18 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/auth")
-@RequiredArgsConstructor
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final long expiracaoMs;
 
-    @Value("${jwt.expiration-ms}")
-    private long expiracaoMs;
+    public AuthController(AuthenticationManager authenticationManager, JwtService jwtService,
+                           @Value("${jwt.expiration-ms}") long expiracaoMs) {
+        this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
+        this.expiracaoMs = expiracaoMs;
+    }
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {

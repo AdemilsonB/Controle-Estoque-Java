@@ -129,7 +129,7 @@ public class ProdutoServiceImpl implements ProdutoService {
     }
 
     private Fornecedor buscarFornecedor(Long id) {
-        return fornecedorRepository.findById(id)
+        return fornecedorRepository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Fornecedor", id));
     }
 }
