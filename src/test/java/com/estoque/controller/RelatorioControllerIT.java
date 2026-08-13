@@ -40,7 +40,22 @@ class RelatorioControllerIT {
 
         mockMvc.perform(get("/api/v1/relatorios/valor-estoque"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.valorTotalEstoque").exists())
-                .andExpect(jsonPath("$.quantidadeProdutosAtivos").exists());
+                .andExpect(jsonPath("$.valorTotalEstoque").value(100.00))
+                .andExpect(jsonPath("$.quantidadeProdutosAtivos").value(1));
+    }
+
+    @Test
+    @WithMockUser
+    void deveRetornarProdutosComEstoqueBaixo() throws Exception {
+        Categoria categoria = categoriaRepository.save(Categoria.builder().nome("Categoria Estoque Baixo IT").build());
+        Produto produto = Produto.builder().codigo("SKU-ESTOQUE-BAIXO").nome("Produto Estoque Baixo")
+                .categoria(categoria).precoVenda(new BigDecimal("15.00")).estoqueMinimo(10).build();
+        produto.registrarEntrada(2, new BigDecimal("5.00"));
+        produtoRepository.save(produto);
+
+        mockMvc.perform(get("/api/v1/relatorios/estoque-baixo"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].codigo").value("SKU-ESTOQUE-BAIXO"))
+                .andExpect(jsonPath("$[0].quantidadeEstoque").value(2));
     }
 }

@@ -32,4 +32,16 @@ class RelatorioServiceTest {
         assertThat(resultado.quantidadeProdutosAtivos()).isEqualTo(8L);
         assertThat(resultado.geradoEm()).isNotNull();
     }
+
+    @Test
+    void deveRetornarZeroAoNaoHaverProdutosAtivosComEstoque() {
+        when(produtoRepository.somaValorEstoque()).thenReturn(BigDecimal.ZERO);
+        when(produtoRepository.countByAtivoTrue()).thenReturn(0L);
+
+        RelatorioEstoqueResponse resultado = relatorioService.gerarRelatorioValorEstoque();
+
+        assertThat(resultado.valorTotalEstoque()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(resultado.quantidadeProdutosAtivos()).isEqualTo(0L);
+        assertThat(resultado.geradoEm()).isNotNull();
+    }
 }
