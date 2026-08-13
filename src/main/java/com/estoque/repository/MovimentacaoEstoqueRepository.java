@@ -6,5 +6,5 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MovimentacaoEstoqueRepository extends JpaRepository<MovimentacaoEstoque, Long> {
-    Page<MovimentacaoEstoque> findByProdutoIdOrderByDataMovimentacaoDesc(Long produtoId, Pageable pageable);
+    Page<MovimentacaoEstoque> findByProdutoIdOrderByDataMovimentacaoDescIdDesc(Long produtoId, Pageable pageable);
 }

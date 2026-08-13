@@ -109,7 +109,7 @@ public class ProdutoServiceImpl implements ProdutoService {
     public Page<MovimentacaoResponse> listarMovimentacoes(Long produtoId, Pageable pageable) {
         buscarEntidadeAtivaPorId(produtoId);
         return movimentacaoEstoqueRepository
-                .findByProdutoIdOrderByDataMovimentacaoDesc(produtoId, pageable)
+                .findByProdutoIdOrderByDataMovimentacaoDescIdDesc(produtoId, pageable)
                 .map(movimentacaoEstoqueMapper::toResponse);
     }
 

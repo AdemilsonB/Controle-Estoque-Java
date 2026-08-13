@@ -52,6 +52,10 @@ class ProdutoKardexIT {
 
         mockMvc.perform(get("/api/v1/produtos/" + produto.getId() + "/movimentacoes"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.page.totalElements").value(2));
+                .andExpect(jsonPath("$.page.totalElements").value(2))
+                .andExpect(jsonPath("$.content[0].tipo").value("SAIDA"))
+                .andExpect(jsonPath("$.content[0].motivo").value("VENDA"))
+                .andExpect(jsonPath("$.content[1].tipo").value("ENTRADA"))
+                .andExpect(jsonPath("$.content[1].custoUnitario").value(5.00));
     }
 }

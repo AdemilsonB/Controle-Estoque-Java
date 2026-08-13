@@ -54,7 +54,7 @@ class MovimentacaoEstoqueRepositoryTest {
         saidaRepository.save(saida);
 
         Page<MovimentacaoEstoque> pagina = movimentacaoRepository
-                .findByProdutoIdOrderByDataMovimentacaoDesc(produto.getId(), PageRequest.of(0, 10));
+                .findByProdutoIdOrderByDataMovimentacaoDescIdDesc(produto.getId(), PageRequest.of(0, 10));
 
         assertThat(pagina.getTotalElements()).isEqualTo(2);
     }
