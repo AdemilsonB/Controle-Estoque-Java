@@ -1,54 +1,136 @@
-# Controle de Estoque com Java
+# Controle de Estoque — API REST
 
-<h3>Aplicação criada com Java durante o ano de 2021.<br>
-Desenvolvimento completo, com modelo Model, View e Controller(MVC), a aplicação foi desenvolvida para o controle de estoque de uma loja.</h3>
+API REST em Spring Boot para controle de estoque: produtos, categorias, coleções, fornecedores, funcionários e movimentações de entrada/saída, com autenticação JWT, controle de concorrência e documentação OpenAPI.
 
-<h2>Ferramentas e Tecnologias ultilizadas para o desenvolvimento:</h2>
-- IDE Eclipse;<br>
-- Java 11 LTS (Long-Term Support);<br>
-- GitHub - Versionamento de código;<br>
-- Kanbanflow - Planejamento e organização de desenvolvimento;<br>
+## Stack
 
-<h2>Models:</h2>
-- Pessoa;<br>
-- Funcionario;<br>
-- Fornecedor;<br>
-- Produto;<br>
-- Categoria;<br>
-- Colecao;<br>
-- Fluxo;<br>
-- Endereco;<br>
-- Saida;<br>
+- Java 17 · Spring Boot 3.3 · Spring Web · Spring Data JPA · Spring Security 6 (JWT)
+- Flyway · H2 (dev/test) · PostgreSQL 16 (produção, via Docker Compose)
+- springdoc-openapi (Swagger UI) · Bean Validation · MapStruct · Lombok
+- JUnit 5 · Mockito · MockMvc · Maven
 
-<h2>Views:</h2>
-- Principal, MenuFornecedor, MenuProduto, MenuRegistroDeEntrada, MenuRegistroDeSaida e MostrarControleEstoque;<br>
-- CadastrarFornecedor, EditarFornecedor, ListarFornecedores e DeletarFornecedor;<br>
-- CadastrarFuncionario, ListarFuncionario e DeletarFuncionario;<br>
-- CadastrarProduto, EditarProduto, ListarProdutos e DeletarProduto;<br>
-- RegistrarEntrada, ListarEntradas e DeletarEntrada;<br>
-- RegistrarSaida, ListarSaidas e DeletarSaida;<br>
+## Arquitetura
 
-<h2>Controllers: </h2>
-- EntradaController;<br>
-- FornecedorController;<br>
-- FuncionarioController;<br>
-- ProdutoController;<br>
-- SaidaController;<br>
+```
+Controller  →  Service (interface + impl)  →  Repository (Spring Data JPA)
+     ↓                    ↓
+   DTO (record)      Entity (JPA)
+     ↓                    ↓
+GlobalExceptionHandler (ProblemDetail / RFC 7807)
+```
 
-<h2>Descrição de Funcionalidades do sistema:</h2>
-O sistema foi desenvolvido para oferecer diversas funcionalidades que possibilitam o gerenciamento eficiente dos registros. Com ele, é possível realizar as operações de cadastro, listagem, edição e exclusão de dados de forma intuitiva e organizada.<br>
+- Injeção de dependência exclusivamente via construtor.
+- Toda escrita em service é `@Transactional`; leituras são `@Transactional(readOnly = true)`.
+- Regras de negócio de estoque vivem na entidade `Produto` (`registrarEntrada`/`registrarSaida`), nunca no controller.
+- `Produto.quantidadeEstoque` é protegido por lock otimista (`@Version`): duas movimentações concorrentes no mesmo produto nunca causam *lost update* — a segunda recebe `409 Conflict` e deve reenviar a operação.
+- Erros seguem RFC 7807 (`ProblemDetail`) de forma consistente em toda a API, inclusive falhas de autenticação/autorização geradas pelo Spring Security.
 
-No módulo de cadastro, o usuário pode inserir informações relevantes sobre os registros desejados. O sistema realiza verificações e validações para garantir a integridade dos dados, assegurando que somente informações corretas e válidas sejam armazenadas.<br>
+## Como rodar localmente (H2, sem dependências externas)
 
-A tela de listagem permite visualizar todos os registros cadastrados, proporcionando uma visão abrangente de todos os dados presentes no sistema. Isso facilita a identificação rápida e eficiente de informações específicas.<br>
+```bash
+mvn spring-boot:run
+```
 
-Na funcionalidade de edição, o usuário tem a capacidade de atualizar os dados já cadastrados. Essa opção é especialmente útil para correção de informações desatualizadas ou incorretas, garantindo que os registros estejam sempre precisos.<br>
+A aplicação sobe em `http://localhost:8080` com banco H2 em memória e dados de seed já carregados (veja credenciais abaixo). Console H2 disponível em `http://localhost:8080/h2-console` (JDBC URL: `jdbc:h2:mem:estoque`).
 
-O sistema também oferece a opção de exclusão de registros, permitindo ao usuário remover dados que já não são mais necessários. Essa funcionalidade é realizada com cuidado para evitar exclusões acidentais e garantir a segurança dos dados.<br>
+## Como rodar com PostgreSQL (Docker Compose)
 
-Uma das características distintivas do sistema é que a <strong>busca de registros não é feita em um banco de dados tradicional</strong>, mas sim em listas armazenadas em memória durante a execução do programa. Isso proporciona uma resposta rápida e eficiente, tornando o processo de busca ágil e eficaz.<br>
+```bash
+docker compose up --build
+```
 
-As telas foram projetadas de forma separada para cada uma das ações, o que facilita o entendimento do usuário e oferece uma experiência de uso mais intuitiva. Essa organização também torna a manutenção do projeto mais simples e organizada.<br>
+Sobe PostgreSQL 16 + a aplicação no perfil `prod`, executando as mesmas migrations Flyway usadas em desenvolvimento.
 
-Em resumo, o sistema oferece um conjunto completo de funcionalidades para gerenciamento de registros, garantindo eficiência, organização e facilidade de uso. Com todas essas características, os usuários podem contar com uma ferramenta robusta e eficaz para lidar com suas necessidades de cadastro e gerenciamento de informações.<br>
+> **⚠️ Importante:** O valor de `JWT_SECRET` definido no `docker-compose.yml` é uma chave de demonstração/desenvolvimento. Antes de qualquer deploy em produção, substitua esse valor por uma chave segura gerada aleatoriamente.
 
+## Usuário de seed
+
+| Email | Senha | Papel |
+|---|---|---|
+| `admin@estoque.com` | `admin123` | `ADMIN` |
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@estoque.com","senha":"admin123"}'
+```
+
+A resposta traz o `token` JWT a ser enviado em `Authorization: Bearer <token>` nas demais requisições.
+
+## Documentação interativa
+
+Swagger UI: `http://localhost:8080/swagger-ui.html`
+OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+
+## Principais endpoints
+
+| Método | Rota | Papel exigido |
+|---|---|---|
+| POST | `/api/v1/auth/login` | público |
+| GET/POST/PUT/DELETE | `/api/v1/produtos` | leitura: autenticado · escrita: `ADMIN` |
+| GET | `/api/v1/produtos/estoque-baixo` | autenticado |
+| GET | `/api/v1/produtos/{id}/movimentacoes` | autenticado (kardex) |
+| GET/POST/PUT/DELETE | `/api/v1/categorias`, `/api/v1/colecoes` | leitura: autenticado · escrita: `ADMIN` |
+| GET/POST/PUT/DELETE | `/api/v1/fornecedores` | leitura: autenticado · escrita: `ADMIN` |
+| GET/POST/PUT/DELETE | `/api/v1/funcionarios` | `ADMIN` |
+| GET | `/api/v1/funcionarios/me` | autenticado |
+| GET/POST | `/api/v1/entradas`, `/api/v1/saidas` | leitura: autenticado · escrita: `ADMIN` ou `OPERADOR` |
+| GET | `/api/v1/relatorios/valor-estoque`, `/api/v1/relatorios/estoque-baixo` | autenticado |
+
+### Paginação
+
+Os endpoints de listagem (GET) retornam um `PagedModel` com a seguinte estrutura:
+
+```json
+{
+  "content": [
+    { "id": 1, "nome": "Produto A", ... },
+    { "id": 2, "nome": "Produto B", ... }
+  ],
+  "page": {
+    "size": 20,
+    "number": 0,
+    "totalElements": 150,
+    "totalPages": 8
+  }
+}
+```
+
+Use os query parameters `page` (0-indexed) e `size` para controlar a paginação: `GET /api/v1/produtos?page=1&size=20`.
+
+## Testes
+
+```bash
+mvn clean verify
+```
+
+Cobre testes unitários de service (Mockito), testes de integração de controller (MockMvc + H2) e um teste de concorrência real (`SaidaConcorrenciaIT`) que dispara múltiplas saídas simultâneas sobre o mesmo produto e confirma que o estoque nunca fica negativo.
+
+## Estrutura de pastas
+
+```
+src/main/java/com/estoque/
+├── config/         SecurityConfig, OpenApiConfig
+├── controller/      endpoints REST
+├── dto/             request/response (records)
+├── entity/           entidades JPA
+├── enums/            Role, MotivoSaida
+├── exception/         hierarquia de exceptions + GlobalExceptionHandler
+├── mapper/            MapStruct + mapeador polimórfico de movimentações
+├── repository/        Spring Data JPA
+├── security/          JWT, UserDetailsService, filtros
+└── service/           regras de negócio (interface + impl)
+```
+
+## Decisões de design
+
+- **`ProblemDetail` (RFC 7807)** em vez de um corpo de erro ad-hoc: é o padrão nativo do Spring 6/Boot 3 e já é entendido por qualquer client HTTP moderno.
+- **Lock otimista em vez de lock pessimista** no estoque: melhor throughput em operações concorrentes; o custo é o cliente eventualmente precisar reenviar uma operação em conflito, tratado explicitamente com `409 Conflict`.
+- **Soft delete** em Produto/Fornecedor/Funcionário: preserva o histórico de movimentações mesmo após a "exclusão" (uma saída nunca perde a referência ao produto que a originou).
+- **Herança `JOINED`** em `MovimentacaoEstoque`: permite consultar o kardex de um produto com uma única query polimórfica, sem duplicar colunas comuns entre `Entrada` e `Saida`.
+
+## Roadmap
+
+- Pipeline de CI (build + testes a cada push)
+- Deploy automatizado (ex: Railway/Render)
+- Cache de leitura para relatórios
