@@ -1,5 +1,7 @@
 package com.estoque.controller;
 
+import com.estoque.entity.Categoria;
+import com.estoque.repository.CategoriaRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,8 +11,10 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -22,6 +26,7 @@ class CategoriaControllerIT {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
+    @Autowired private CategoriaRepository categoriaRepository;
 
     @Test
     @WithMockUser(roles = "ADMIN")
@@ -61,5 +66,40 @@ class CategoriaControllerIT {
         mockMvc.perform(get("/api/v1/categorias"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void deveAtualizarCategoriaComSucesso() throws Exception {
+        Categoria categoria = Categoria.builder().nome("Categoria Original").descricao("Descrição original").build();
+        Categoria salva = categoriaRepository.save(categoria);
+
+        String corpo = objectMapper.writeValueAsString(
+                new com.estoque.dto.request.CategoriaRequest("Categoria Atualizada", "Descrição atualizada"));
+
+        mockMvc.perform(put("/api/v1/categorias/" + salva.getId()).contentType("application/json").content(corpo))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome").value("Categoria Atualizada"))
+                .andExpect(jsonPath("$.descricao").value("Descrição atualizada"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void deveExcluirCategoriaComSucesso() throws Exception {
+        Categoria categoria = Categoria.builder().nome("Categoria Para Deletar").descricao("Será deletada").build();
+        Categoria salva = categoriaRepository.save(categoria);
+
+        mockMvc.perform(delete("/api/v1/categorias/" + salva.getId()))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/categorias/" + salva.getId()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser
+    void deveRetornar404AoBuscarCategoriaInexistente() throws Exception {
+        mockMvc.perform(get("/api/v1/categorias/999999"))
+                .andExpect(status().isNotFound());
     }
 }
