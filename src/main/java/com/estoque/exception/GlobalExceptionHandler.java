@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AccountStatusException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -68,6 +69,12 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public ProblemDetail handleCredenciaisInvalidas(BadCredentialsException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "E-mail ou senha inválidos");
+    }
+
+    @ExceptionHandler(AccountStatusException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ProblemDetail handleContaInativaOuBloqueada(AccountStatusException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, "Conta inativa ou bloqueada");
     }
 
     @ExceptionHandler(AccessDeniedException.class)

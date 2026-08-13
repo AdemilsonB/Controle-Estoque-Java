@@ -1,5 +1,6 @@
 package com.estoque.security;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,17 +37,25 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         String token = cabecalhoAuth.substring(PREFIXO_BEARER.length());
-        String email = jwtService.extrairSubject(token);
 
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+        try {
+            String email = jwtService.extrairSubject(token);
 
-            if (jwtService.tokenValido(token, userDetails.getUsername())) {
-                var authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+
+                if (jwtService.tokenValido(token, userDetails.getUsername())) {
+                    var authentication = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             }
+        } catch (JwtException e) {
+            // Token malformado, expirado ou com assinatura inválida: segue sem autenticar,
+            // deixando o RestAuthenticationEntryPoint responder 401 para rotas protegidas.
+            filterChain.doFilter(request, response);
+            return;
         }
 
         filterChain.doFilter(request, response);
