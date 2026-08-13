@@ -24,6 +24,7 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
                 "Autenticação necessária: informe um token Bearer válido");
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
         objectMapper.writeValue(response.getWriter(), problem);
     }
 }
