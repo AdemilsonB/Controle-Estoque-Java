@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: estoque
+      POSTGRES_USER: estoque
+      POSTGRES_PASSWORD: estoque
+    ports:
+      - "5432:5432"
+    volumes:
+      - estoque-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U estoque"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/estoque
+      SPRING_DATASOURCE_USERNAME: estoque
+      SPRING_DATASOURCE_PASSWORD: estoque
+      JWT_SECRET: MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODk=
+    ports:
+      - "8080:8080"
+
+volumes:
+  estoque-postgres-data:
