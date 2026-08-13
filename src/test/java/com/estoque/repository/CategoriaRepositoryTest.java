@@ -16,11 +16,11 @@ class CategoriaRepositoryTest {
 
     @Test
     void devePersistirEBuscarCategoria() {
-        Categoria categoria = Categoria.builder().nome("Calçados").descricao("Tênis e sapatos").build();
+        Categoria categoria = Categoria.builder().nome("Eletrônicos").descricao("Fones e acessórios").build();
 
         Categoria salva = categoriaRepository.save(categoria);
 
         assertThat(salva.getId()).isNotNull();
-        assertThat(categoriaRepository.existsByNomeIgnoreCase("calçados")).isTrue();
+        assertThat(categoriaRepository.existsByNomeIgnoreCase("eletrônicos")).isTrue();
     }
 }

@@ -17,11 +17,11 @@ class ColecaoRepositoryTest {
 
     @Test
     void devePersistirEBuscarColecao() {
-        Colecao colecao = Colecao.builder().nome("Verão 2026").descricao("Coleção verão").build();
+        Colecao colecao = Colecao.builder().nome("Primavera 2026").descricao("Coleção primavera").build();
 
         Colecao salva = colecaoRepository.save(colecao);
 
         assertThat(salva.getId()).isNotNull();
-        assertThat(colecaoRepository.existsByNomeIgnoreCase("verão 2026")).isTrue();
+        assertThat(colecaoRepository.existsByNomeIgnoreCase("primavera 2026")).isTrue();
     }
 }
