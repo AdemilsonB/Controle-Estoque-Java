@@ -6,6 +6,7 @@ import com.estoque.entity.Funcionario;
 import com.estoque.entity.Produto;
 import com.estoque.entity.Saida;
 import com.estoque.exception.RecursoNaoEncontradoException;
+import com.estoque.mapper.MovimentacaoEstoqueMapper;
 import com.estoque.repository.FuncionarioRepository;
 import com.estoque.repository.ProdutoRepository;
 import com.estoque.repository.SaidaRepository;
@@ -23,6 +24,7 @@ public class SaidaServiceImpl implements SaidaService {
     private final ProdutoRepository produtoRepository;
     private final FuncionarioRepository funcionarioRepository;
     private final SaidaRepository saidaRepository;
+    private final MovimentacaoEstoqueMapper movimentacaoMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -30,7 +32,7 @@ public class SaidaServiceImpl implements SaidaService {
         Page<Saida> pagina = produtoId != null
                 ? saidaRepository.findByProdutoId(produtoId, pageable)
                 : saidaRepository.findAll(pageable);
-        return pagina.map(this::toResponse);
+        return pagina.map(movimentacaoMapper::toResponse);
     }
 
     /**
@@ -63,14 +65,6 @@ public class SaidaServiceImpl implements SaidaService {
                 .observacao(request.observacao())
                 .build();
 
-        return toResponse(saidaRepository.save(saida));
-    }
-
-    private MovimentacaoResponse toResponse(Saida saida) {
-        return new MovimentacaoResponse(
-                saida.getId(), "SAIDA", saida.getProduto().getCodigo(), saida.getProduto().getNome(),
-                saida.getFuncionario().getNome() + " " + saida.getFuncionario().getSobrenome(),
-                saida.getQuantidade(), saida.getDataMovimentacao(), saida.getObservacao(),
-                null, saida.getMotivo().name());
+        return movimentacaoMapper.toResponse(saidaRepository.save(saida));
     }
 }

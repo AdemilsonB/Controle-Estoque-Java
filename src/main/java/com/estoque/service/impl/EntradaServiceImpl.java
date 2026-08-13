@@ -7,6 +7,7 @@ import com.estoque.entity.Fornecedor;
 import com.estoque.entity.Funcionario;
 import com.estoque.entity.Produto;
 import com.estoque.exception.RecursoNaoEncontradoException;
+import com.estoque.mapper.MovimentacaoEstoqueMapper;
 import com.estoque.repository.EntradaRepository;
 import com.estoque.repository.FornecedorRepository;
 import com.estoque.repository.FuncionarioRepository;
@@ -26,6 +27,7 @@ public class EntradaServiceImpl implements EntradaService {
     private final FuncionarioRepository funcionarioRepository;
     private final FornecedorRepository fornecedorRepository;
     private final EntradaRepository entradaRepository;
+    private final MovimentacaoEstoqueMapper movimentacaoMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -33,7 +35,7 @@ public class EntradaServiceImpl implements EntradaService {
         Page<Entrada> pagina = produtoId != null
                 ? entradaRepository.findByProdutoId(produtoId, pageable)
                 : entradaRepository.findAll(pageable);
-        return pagina.map(this::toResponse);
+        return pagina.map(movimentacaoMapper::toResponse);
     }
 
     @Override
@@ -60,14 +62,6 @@ public class EntradaServiceImpl implements EntradaService {
                 .observacao(request.observacao())
                 .build();
 
-        return toResponse(entradaRepository.save(entrada));
-    }
-
-    private MovimentacaoResponse toResponse(Entrada entrada) {
-        return new MovimentacaoResponse(
-                entrada.getId(), "ENTRADA", entrada.getProduto().getCodigo(), entrada.getProduto().getNome(),
-                entrada.getFuncionario().getNome() + " " + entrada.getFuncionario().getSobrenome(),
-                entrada.getQuantidade(), entrada.getDataMovimentacao(), entrada.getObservacao(),
-                entrada.getCustoUnitario(), null);
+        return movimentacaoMapper.toResponse(entradaRepository.save(entrada));
     }
 }

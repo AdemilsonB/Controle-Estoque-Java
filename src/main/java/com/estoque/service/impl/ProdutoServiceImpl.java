@@ -1,6 +1,7 @@
 package com.estoque.service.impl;
 
 import com.estoque.dto.request.ProdutoRequest;
+import com.estoque.dto.response.MovimentacaoResponse;
 import com.estoque.dto.response.ProdutoResponse;
 import com.estoque.entity.Categoria;
 import com.estoque.entity.Colecao;
@@ -8,10 +9,12 @@ import com.estoque.entity.Fornecedor;
 import com.estoque.entity.Produto;
 import com.estoque.exception.RecursoNaoEncontradoException;
 import com.estoque.exception.RegistroDuplicadoException;
+import com.estoque.mapper.MovimentacaoEstoqueMapper;
 import com.estoque.mapper.ProdutoMapper;
 import com.estoque.repository.CategoriaRepository;
 import com.estoque.repository.ColecaoRepository;
 import com.estoque.repository.FornecedorRepository;
+import com.estoque.repository.MovimentacaoEstoqueRepository;
 import com.estoque.repository.ProdutoRepository;
 import com.estoque.service.ProdutoService;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,8 @@ public class ProdutoServiceImpl implements ProdutoService {
     private final ColecaoRepository colecaoRepository;
     private final FornecedorRepository fornecedorRepository;
     private final ProdutoMapper produtoMapper;
+    private final MovimentacaoEstoqueRepository movimentacaoEstoqueRepository;
+    private final MovimentacaoEstoqueMapper movimentacaoEstoqueMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -97,6 +102,15 @@ public class ProdutoServiceImpl implements ProdutoService {
         Produto produto = buscarEntidadeAtivaPorId(id);
         produto.desativar();
         produtoRepository.save(produto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<MovimentacaoResponse> listarMovimentacoes(Long produtoId, Pageable pageable) {
+        buscarEntidadeAtivaPorId(produtoId);
+        return movimentacaoEstoqueRepository
+                .findByProdutoIdOrderByDataMovimentacaoDesc(produtoId, pageable)
+                .map(movimentacaoEstoqueMapper::toResponse);
     }
 
     private Produto buscarEntidadeAtivaPorId(Long id) {

@@ -1,6 +1,7 @@
 package com.estoque.service;
 
 import com.estoque.dto.request.ProdutoRequest;
+import com.estoque.dto.response.MovimentacaoResponse;
 import com.estoque.dto.response.ProdutoResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,4 +15,5 @@ public interface ProdutoService {
     ProdutoResponse criar(ProdutoRequest request);
     ProdutoResponse atualizar(Long id, ProdutoRequest request);
     void excluir(Long id);
+    Page<MovimentacaoResponse> listarMovimentacoes(Long produtoId, Pageable pageable);
 }

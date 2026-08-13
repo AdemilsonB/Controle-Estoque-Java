@@ -1,6 +1,7 @@
 package com.estoque.controller;
 
 import com.estoque.dto.request.ProdutoRequest;
+import com.estoque.dto.response.MovimentacaoResponse;
 import com.estoque.dto.response.ProdutoResponse;
 import com.estoque.service.ProdutoService;
 import jakarta.validation.Valid;
@@ -61,5 +62,11 @@ public class ProdutoController {
     public ResponseEntity<Void> excluir(@PathVariable Long id) {
         produtoService.excluir(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/movimentacoes")
+    public ResponseEntity<Page<MovimentacaoResponse>> listarMovimentacoes(
+            @PathVariable Long id, Pageable pageable) {
+        return ResponseEntity.ok(produtoService.listarMovimentacoes(id, pageable));
     }
 }

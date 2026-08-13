@@ -7,6 +7,7 @@ import com.estoque.entity.Funcionario;
 import com.estoque.entity.Produto;
 import com.estoque.enums.Role;
 import com.estoque.exception.RecursoNaoEncontradoException;
+import com.estoque.mapper.MovimentacaoEstoqueMapper;
 import com.estoque.repository.EntradaRepository;
 import com.estoque.repository.FornecedorRepository;
 import com.estoque.repository.FuncionarioRepository;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -36,6 +38,7 @@ class EntradaServiceTest {
     @Mock private FuncionarioRepository funcionarioRepository;
     @Mock private FornecedorRepository fornecedorRepository;
     @Mock private EntradaRepository entradaRepository;
+    @Spy private MovimentacaoEstoqueMapper movimentacaoMapper = new MovimentacaoEstoqueMapper();
     @InjectMocks private EntradaServiceImpl entradaService;
 
     private Produto novoProduto(int estoqueInicial) {
