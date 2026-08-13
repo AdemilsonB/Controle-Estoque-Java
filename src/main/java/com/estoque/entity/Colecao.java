@@ -22,9 +22,10 @@ public class Colecao {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Setter(AccessLevel.NONE)
     private Long id;
 
-    @Column(name = "nome", nullable = false, unique = true, length = 80)
+    @Column(name = "nome", nullable = false, length = 80)
     private String nome;
 
     @Column(name = "descricao", length = 255)
