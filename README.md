@@ -49,6 +49,8 @@ Sobe PostgreSQL 16 + a aplicação no perfil `prod`, executando as mesmas migrat
 |---|---|---|
 | `admin@estoque.com` | `admin123` | `ADMIN` |
 
+> **⚠️ Importante:** essa conta e senha são exclusivamente para desenvolvimento local. Não as utilize como estão se o `docker compose`/perfil `prod` for apontado para um ambiente real acessível pela internet — troque a senha (e idealmente o e-mail) antes de qualquer deploy.
+
 ```bash
 curl -X POST http://localhost:8080/api/v1/auth/login \
   -H "Content-Type: application/json" \
