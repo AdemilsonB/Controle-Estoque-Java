@@ -31,6 +31,7 @@ public class SecurityConfig {
     // em APIs REST públicas.
     private static final String[] ROTAS_PUBLICAS = {
             "/api/v1/auth/login",
+            "/swagger-ui.html",
             "/swagger-ui/**",
             "/v3/api-docs/**"
     };

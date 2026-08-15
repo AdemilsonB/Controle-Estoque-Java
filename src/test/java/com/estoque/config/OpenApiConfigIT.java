@@ -25,4 +25,10 @@ class OpenApiConfigIT {
                 .andExpect(jsonPath("$.info.title").value("Controle de Estoque API"))
                 .andExpect(jsonPath("$.components.securitySchemes.bearer-jwt.scheme").value("bearer"));
     }
+
+    @Test
+    void deveAcessarSwaggerUiHtmlSemAutenticacao() throws Exception {
+        mockMvc.perform(get("/swagger-ui.html"))
+                .andExpect(status().is3xxRedirection());
+    }
 }
