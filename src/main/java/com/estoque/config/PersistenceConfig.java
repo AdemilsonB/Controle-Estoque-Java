@@ -1,5 +1,6 @@
 package com.estoque.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zaxxer.hikari.HikariDataSource;
 import org.hibernate.jpa.HibernatePersistenceProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +11,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.JpaVendorAdapter;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
@@ -68,5 +70,21 @@ public class PersistenceConfig {
     @Bean
     public PlatformTransactionManager transactionManager(LocalContainerEntityManagerFactoryBean emf) {
         return new JpaTransactionManager(emf.getObject());
+    }
+
+    // RestAuthenticationEntryPoint e RestAccessDeniedHandler (com.estoque.security, escaneados pelo
+    // @ComponentScan acima) serializam ProblemDetail para JSON e precisam de um ObjectMapper
+    // injetável. Sob Spring Boot isso vinha de graça via JacksonAutoConfiguration; em Spring
+    // tradicional precisa ser exposto explicitamente. Fica aqui (e não em SecurityConfig, que também
+    // consome esses beans) para não criar dependência circular: SecurityConfig injeta
+    // RestAuthenticationEntryPoint no construtor, então um @Bean ObjectMapper declarado na própria
+    // SecurityConfig exigiria a instância de SecurityConfig já construída para produzir o
+    // ObjectMapper que RestAuthenticationEntryPoint precisa antes da SecurityConfig terminar de
+    // construir — construído do mesmo jeito que o WebConfig monta o
+    // MappingJackson2HttpMessageConverter (Jackson2ObjectMapperBuilder), para detectar os mesmos
+    // módulos (ex.: jackson-datatype-jsr310) automaticamente via classpath.
+    @Bean
+    public ObjectMapper objectMapper() {
+        return Jackson2ObjectMapperBuilder.json().build();
     }
 }
