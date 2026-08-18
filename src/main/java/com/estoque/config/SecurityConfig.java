@@ -19,6 +19,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -29,14 +31,23 @@ public class SecurityConfig {
     // Publicadas em todos os perfis, inclusive produção: login é sempre público, e expor a
     // documentação OpenAPI/Swagger para consumidores da API é uma escolha deliberada e comum
     // em APIs REST públicas.
-    private static final String[] ROTAS_PUBLICAS = {
-            "/api/v1/auth/login",
-            "/swagger-ui.html",
-            "/swagger-ui/**",
-            "/v3/api-docs/**"
+    //
+    // AntPathRequestMatcher (não requestMatchers(String...) via MvcRequestMatcher) porque esta
+    // SecurityFilterChain guarda tanto /api/** quanto, a partir da Task 10, /faces/** — o FacesServlet
+    // do JSF nunca passa pelo DispatcherServlet/Spring MVC. MvcRequestMatcher exige um bean
+    // mvcHandlerMappingIntrospector que só existe no contexto filho do DispatcherServlet (WebConfig),
+    // mas SecurityConfig vive no contexto raiz (WebAppInitializer), compartilhado entre REST e JSF —
+    // então esse bean não é visível aqui em runtime real (só nos testes, que carregam WebConfig e
+    // SecurityConfig juntos num único contexto achatado). AntPathRequestMatcher casa
+    // getServletPath()+getPathInfo() diretamente, sem depender do Spring MVC.
+    private static final RequestMatcher[] ROTAS_PUBLICAS = {
+            new AntPathRequestMatcher("/api/v1/auth/login"),
+            new AntPathRequestMatcher("/swagger-ui.html"),
+            new AntPathRequestMatcher("/swagger-ui/**"),
+            new AntPathRequestMatcher("/v3/api-docs/**")
     };
 
-    private static final String ROTA_H2_CONSOLE = "/h2-console/**";
+    private static final RequestMatcher ROTA_H2_CONSOLE = new AntPathRequestMatcher("/h2-console/**");
 
     private final JwtAuthFilter jwtAuthFilter;
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
