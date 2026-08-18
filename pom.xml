@@ -146,6 +146,35 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
+                <configuration>
+                    <!-- O default do Surefire só inclui **/*Test.java — os testes de integração deste
+                         projeto usam sufixo *IT.java (convenção normalmente reservada ao
+                         maven-failsafe-plugin, ligado à fase verify). Este projeto não usa failsafe;
+                         herda a configuração explícita que existia antes da migração para Spring
+                         tradicional, incluindo *IT.java também no Surefire, para que "mvn clean verify"
+                         rode a suíte completa (105 testes) numa única fase de test. -->
+                    <includes>
+                        <include>**/Test*.java</include>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                        <include>**/*TestCase.java</include>
+                        <include>**/*IT.java</include>
+                    </includes>
+                    <!-- Testes de repositório/serviço/controller compartilham o mesmo H2 em memória
+                         "estoque-test" (db.url em app-test.properties, DB_CLOSE_DELAY=-1). Sob Boot,
+                         @DataJpaTest isolava esse compartilhamento trocando o DataSource por um banco
+                         embarcado próprio via @AutoConfigureTestDatabase; sem Boot, os testes de
+                         repositório convertidos (Task 5) passaram a usar o mesmo PersistenceConfig e,
+                         portanto, o mesmo banco fixo dos demais testes. Com reuseForks=true (padrão),
+                         todas as classes de teste rodam na mesma JVM/processo e por isso no mesmo banco
+                         H2 "mem", tornando o resultado dependente da ordem de execução das classes (ex.:
+                         uma Categoria "Eletrônicos" criada e não revertida por um teste de controller
+                         colide com o mesmo nome inserido depois por um teste de repositório). Forçar uma
+                         JVM nova por classe de teste restaura o isolamento: cada classe recomeça com um
+                         banco "estoque-test" limpo (recriado via Flyway na subida do contexto). -->
+                    <reuseForks>false</reuseForks>
+                    <forkCount>1</forkCount>
+                </configuration>
             </plugin>
         </plugins>
     </build>
