@@ -14,6 +14,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -33,6 +34,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Funcionario {
 
     @Id
@@ -46,6 +48,7 @@ public class Funcionario {
     @Column(name = "sobrenome", nullable = false, length = 100)
     private String sobrenome;
 
+    @EqualsAndHashCode.Include
     @Column(name = "cpf", nullable = false, length = 11)
     private String cpf;
 

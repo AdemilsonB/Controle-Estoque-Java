@@ -9,6 +9,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -18,6 +19,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Colecao {
 
     @Id
@@ -25,6 +27,7 @@ public class Colecao {
     @Setter(AccessLevel.NONE)
     private Long id;
 
+    @EqualsAndHashCode.Include
     @Column(name = "nome", nullable = false, length = 80)
     private String nome;
 
