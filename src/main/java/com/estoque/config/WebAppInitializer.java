@@ -28,5 +28,15 @@ public class WebAppInitializer implements WebApplicationInitializer {
         ServletRegistration.Dynamic dispatcher = servletContext.addServlet("dispatcher", new DispatcherServlet(restContext));
         dispatcher.setLoadOnStartup(1);
         dispatcher.addMapping("/");
+
+        // CDI (Weld) — pré-requisito dos managed beans JSF (@Named) das próximas tasks.
+        servletContext.addListener("org.jboss.weld.environment.servlet.Listener");
+
+        // Contexto filho JSF: FacesServlet exige um Listener próprio (com.sun.faces.config.ConfigureListener
+        // via jakarta.faces.webapp.FacesServlet, auto-registrado pelo container de Faces).
+        ServletRegistration.Dynamic facesServlet = servletContext.addServlet(
+                "facesServlet", "jakarta.faces.webapp.FacesServlet");
+        facesServlet.setLoadOnStartup(1);
+        facesServlet.addMapping("/faces/*");
     }
 }
