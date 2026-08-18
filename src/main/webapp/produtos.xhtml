@@ -12,10 +12,10 @@
 
     <h:form id="formListagem">
         <h:dataTable value="#{produtoListBean.produtos}" var="produto" border="1">
-            <h:column><f:facet name="header">Código</f:facet>#{produto.codigo}</h:column>
-            <h:column><f:facet name="header">Nome</f:facet>#{produto.nome}</h:column>
-            <h:column><f:facet name="header">Preço</f:facet>#{produto.precoVenda}</h:column>
-            <h:column><f:facet name="header">Estoque</f:facet>#{produto.quantidadeEstoque}</h:column>
+            <h:column><f:facet name="header">Código</f:facet>#{produto.codigo()}</h:column>
+            <h:column><f:facet name="header">Nome</f:facet>#{produto.nome()}</h:column>
+            <h:column><f:facet name="header">Preço</f:facet>#{produto.precoVenda()}</h:column>
+            <h:column><f:facet name="header">Estoque</f:facet>#{produto.quantidadeEstoque()}</h:column>
         </h:dataTable>
 
         <h:commandButton value="Anterior" action="#{produtoListBean.paginaAnterior}" />
