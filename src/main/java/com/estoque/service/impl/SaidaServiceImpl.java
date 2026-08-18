@@ -5,11 +5,13 @@ import com.estoque.dto.response.MovimentacaoResponse;
 import com.estoque.entity.Funcionario;
 import com.estoque.entity.Produto;
 import com.estoque.entity.Saida;
+import com.estoque.exception.EstoqueInsuficienteException;
 import com.estoque.exception.RecursoNaoEncontradoException;
 import com.estoque.mapper.MovimentacaoEstoqueMapper;
 import com.estoque.repository.FuncionarioRepository;
 import com.estoque.repository.ProdutoRepository;
 import com.estoque.repository.SaidaRepository;
+import com.estoque.service.AuditoriaService;
 import com.estoque.service.SaidaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,6 +27,7 @@ public class SaidaServiceImpl implements SaidaService {
     private final FuncionarioRepository funcionarioRepository;
     private final SaidaRepository saidaRepository;
     private final MovimentacaoEstoqueMapper movimentacaoMapper;
+    private final AuditoriaService auditoriaService;
 
     @Override
     @Transactional(readOnly = true)
@@ -50,7 +53,15 @@ public class SaidaServiceImpl implements SaidaService {
 
         // Valida e decrementa o saldo antes de resolver o funcionário: se não houver estoque
         // suficiente, a exceção é lançada aqui e nenhuma gravação (produto ou funcionário) ocorre.
-        produto.registrarSaida(request.quantidade());
+        // A tentativa negada é auditada em transação própria (REQUIRES_NEW, em outro bean) para
+        // sobreviver ao rollback desta transação.
+        try {
+            produto.registrarSaida(request.quantidade());
+        } catch (EstoqueInsuficienteException ex) {
+            auditoriaService.registrarTentativaSaidaNegada(produto.getCodigo(), emailFuncionarioAutenticado,
+                    request.quantidade(), produto.getQuantidadeEstoque());
+            throw ex;
+        }
 
         Funcionario funcionario = funcionarioRepository.findByEmail(emailFuncionarioAutenticado)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Funcionário", emailFuncionarioAutenticado));

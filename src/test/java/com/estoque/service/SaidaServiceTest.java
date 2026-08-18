@@ -37,6 +37,7 @@ class SaidaServiceTest {
     @Mock private FuncionarioRepository funcionarioRepository;
     @Mock private SaidaRepository saidaRepository;
     @Spy private MovimentacaoEstoqueMapper movimentacaoMapper = new MovimentacaoEstoqueMapper();
+    @Mock private AuditoriaService auditoriaService;
     @InjectMocks private SaidaServiceImpl saidaService;
 
     private Produto produtoComEstoque(int quantidade) {
@@ -83,5 +84,6 @@ class SaidaServiceTest {
                 .isInstanceOf(EstoqueInsuficienteException.class);
 
         verify(produtoRepository, org.mockito.Mockito.never()).save(any());
+        verify(auditoriaService).registrarTentativaSaidaNegada("SKU-1", "ana@estoque.com", 5, 2);
     }
 }
