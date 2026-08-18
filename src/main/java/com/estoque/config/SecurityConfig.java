@@ -56,10 +56,12 @@ public class SecurityConfig {
     private final Environment environment;
 
     @Bean
+    @org.springframework.core.annotation.Order(1)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         boolean producao = environment.matchesProfiles("oracle");
 
         http
+                .securityMatcher(new AntPathRequestMatcher("/api/v1/**"))
                 .csrf(csrf -> csrf.disable())
                 .headers(headers -> {
                     // O console H2 é uma ferramenta de desenvolvimento que roda em um <frame>; a
@@ -81,6 +83,33 @@ public class SecurityConfig {
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    @Bean
+    @org.springframework.core.annotation.Order(2)
+    public SecurityFilterChain jsfSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                // AntPathRequestMatcher (não requestMatchers(String...)/securityMatcher(String...) via
+                // MvcRequestMatcher) pela mesma razão documentada em ROTAS_PUBLICAS acima: essa chain
+                // roda no contexto raiz, onde o bean mvcHandlerMappingIntrospector não existe em
+                // runtime real.
+                .securityMatcher(new AntPathRequestMatcher("/faces/**"))
+                // login.xhtml é um <form> HTML puro, sem token CSRF — desabilitar aqui replica a
+                // mesma postura que a chain REST já tem (.csrf(csrf -> csrf.disable()) acima).
+                // Sem isso, o POST para j_spring_security_check tomaria 403 por falta de token.
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(new AntPathRequestMatcher("/faces/login.xhtml"),
+                                new AntPathRequestMatcher("/faces/jakarta.faces.resource/**")).permitAll()
+                        .anyRequest().authenticated())
+                .formLogin(form -> form
+                        .loginPage("/faces/login.xhtml")
+                        .loginProcessingUrl("/faces/j_spring_security_check")
+                        .defaultSuccessUrl("/faces/produtos.xhtml", true)
+                        .permitAll())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
 
         return http.build();
     }
