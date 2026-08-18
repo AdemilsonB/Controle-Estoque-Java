@@ -46,7 +46,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        boolean producao = environment.matchesProfiles("prod");
+        boolean producao = environment.matchesProfiles("oracle");
 
         http
                 .csrf(csrf -> csrf.disable())
