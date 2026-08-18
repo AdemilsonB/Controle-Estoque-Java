@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core">
+<h:head>
+    <title>Produtos — Controle de Estoque</title>
+</h:head>
+<h:body>
+    <h1>Produtos</h1>
+    <h:messages globalOnly="true" />
+
+    <h:form id="formListagem">
+        <h:dataTable value="#{produtoListBean.produtos}" var="produto" border="1">
+            <h:column><f:facet name="header">Código</f:facet>#{produto.codigo}</h:column>
+            <h:column><f:facet name="header">Nome</f:facet>#{produto.nome}</h:column>
+            <h:column><f:facet name="header">Preço</f:facet>#{produto.precoVenda}</h:column>
+            <h:column><f:facet name="header">Estoque</f:facet>#{produto.quantidadeEstoque}</h:column>
+        </h:dataTable>
+
+        <h:commandButton value="Anterior" action="#{produtoListBean.paginaAnterior}" />
+        <h:outputText value="Página #{produtoListBean.paginaAtual + 1}" />
+        <h:commandButton value="Próxima" action="#{produtoListBean.proximaPagina}"
+                          rendered="#{produtoListBean.temProximaPagina}" />
+    </h:form>
+
+    <h:link outcome="produto-form" value="Novo produto" />
+</h:body>
+</html>
