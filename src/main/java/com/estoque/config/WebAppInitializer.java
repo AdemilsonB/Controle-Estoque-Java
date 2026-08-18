@@ -27,6 +27,6 @@ public class WebAppInitializer implements WebApplicationInitializer {
         restContext.register(WebConfig.class);
         ServletRegistration.Dynamic dispatcher = servletContext.addServlet("dispatcher", new DispatcherServlet(restContext));
         dispatcher.setLoadOnStartup(1);
-        dispatcher.addMapping("/api/*");
+        dispatcher.addMapping("/");
     }
 }
