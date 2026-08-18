@@ -104,11 +104,16 @@
         <dependency><groupId>org.mockito</groupId><artifactId>mockito-junit-jupiter</artifactId><version>5.13.0</version><scope>test</scope></dependency>
         <dependency><groupId>org.springframework</groupId><artifactId>spring-test</artifactId><scope>test</scope></dependency>
         <dependency><groupId>org.springframework.security</groupId><artifactId>spring-security-test</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>org.slf4j</groupId><artifactId>slf4j-simple</artifactId><version>2.0.11</version><scope>test</scope></dependency>
         <!-- spring-test's MockMvcResultMatchers (jsonPath/value/header, etc.) expõe overloads que aceitam
              org.hamcrest.Matcher; sem spring-boot-starter-test (que trazia isso transitivamente), o
              compilador precisa dessa classe no classpath para resolver os overloads, mesmo quando o
              Matcher não é usado diretamente nos testes. -->
         <dependency><groupId>org.hamcrest</groupId><artifactId>hamcrest</artifactId><version>2.2</version><scope>test</scope></dependency>
+        <!-- MockMvcResultMatchers.jsonPath(...) delega para com.jayway.jsonpath.JsonPath em tempo de
+             execução; sem spring-boot-starter-test (que trazia isso transitivamente), falta em
+             runtime com NoClassDefFoundError mesmo com compilação bem-sucedida. -->
+        <dependency><groupId>com.jayway.jsonpath</groupId><artifactId>json-path</artifactId><version>2.9.0</version><scope>test</scope></dependency>
     </dependencies>
 
     <build>
@@ -124,6 +129,12 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
+                    <!-- Controllers usam @PathVariable Long id (sem "name" explícito) contando com o
+                         nome do parâmetro resolvido via reflection em runtime; o Boot habilitava -parameters
+                         por padrão via seu parent POM. Sem essa flag, Spring lança IllegalArgumentException
+                         ("parameter name information not available via reflection") em toda rota com
+                         @PathVariable sem nome explícito, resultando em 500 em vez do status esperado. -->
+                    <parameters>true</parameters>
                     <annotationProcessorPaths>
                         <path><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><version>1.18.34</version></path>
                         <path><groupId>org.mapstruct</groupId><artifactId>mapstruct-processor</artifactId><version>${mapstruct.version}</version></path>
