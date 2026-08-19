@@ -10,7 +10,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -25,7 +24,11 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+// @EnableMethodSecurity NÃO vive aqui — ver comentário em WebConfig.java. Este contexto (raiz,
+// via ContextLoaderListener) não contém nenhum bean anotado com @PreAuthorize; todos os
+// @RestController do projeto são escaneados no contexto filho (WebConfig), que é onde a
+// infraestrutura de interceptor de @EnableMethodSecurity precisa estar para realmente envolver
+// esses beans.
 @RequiredArgsConstructor
 public class SecurityConfig {
 

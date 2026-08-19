@@ -10,6 +10,7 @@ import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -21,6 +22,21 @@ import static org.springframework.data.web.config.EnableSpringDataWebSupport.Pag
 @Configuration
 @EnableWebMvc
 @EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO)
+// @EnableMethodSecurity fica aqui, não em SecurityConfig (contexto raiz), porque a infraestrutura
+// de interceptor que a anotação registra só envolve (proxy) beans criados NO MESMO ApplicationContext
+// em que a anotação está declarada. Os únicos beans anotados com @PreAuthorize do projeto são os
+// sete @RestController — todos escaneados abaixo, no contexto filho do DispatcherServlet — então é
+// aqui que o interceptor precisa estar para realmente interceptar as chamadas. Antes dessa correção,
+// @EnableMethodSecurity vivia em SecurityConfig (contexto raiz, carregado via ContextLoaderListener),
+// e os proxies de método nunca chegavam a envolver os controllers do contexto filho: todo
+// @PreAuthorize("hasRole('ADMIN')") nos controllers era silenciosamente inerte em runtime real (um
+// OPERADOR conseguia POST /api/v1/produtos e receber 201). Os testes não pegavam isso porque
+// carregam WebConfig e SecurityConfig juntos num único contexto achatado (@SpringJUnitConfig),
+// mascarando a divisão raiz/filho que existe na aplicação implantada de verdade. Em runtime, o
+// interceptor só lê SecurityContextHolder.getContext().getAuthentication() (mecanismo estático/
+// ThreadLocal) — não precisa localizar nenhum bean do contexto raiz — então mover a anotação para cá
+// não introduz nenhum risco de visibilidade entre contextos.
+@EnableMethodSecurity
 @ComponentScan(basePackages = {"com.estoque.controller", "com.estoque.exception"})
 // springdoc-openapi registra /v3/api-docs e /swagger-ui.html através dessas classes de configuração,
 // hoje carregadas via spring-boot-autoconfigure (META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
