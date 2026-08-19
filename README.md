@@ -7,7 +7,7 @@ API REST em Spring Boot para controle de estoque: produtos, categorias, coleçõ
 ## Stack
 
 - Java 17 · Spring Boot 3.3 · Spring Web · Spring Data JPA · Spring Security 6 (JWT)
-- Flyway · H2 (dev/test) · PostgreSQL 16 (produção, via Docker Compose)
+- Flyway · H2 (dev/test) · Oracle XE (produção, via Docker Compose)
 - springdoc-openapi (Swagger UI) · Bean Validation · MapStruct · Lombok
 - JUnit 5 · Mockito · MockMvc · Maven
 
@@ -60,7 +60,7 @@ Sobe Oracle XE + a aplicação no perfil `oracle`, executando migrations Flyway 
 > **⚠️ Importante:** essa conta e senha são exclusivamente para desenvolvimento local. Não as utilize como estão se o `docker compose`/perfil `prod` for apontado para um ambiente real acessível pela internet — troque a senha (e idealmente o e-mail) antes de qualquer deploy.
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
+curl -X POST http://localhost:8080/controle-estoque/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@estoque.com","senha":"admin123"}'
 ```
@@ -69,8 +69,8 @@ A resposta traz o `token` JWT a ser enviado em `Authorization: Bearer <token>` n
 
 ## Documentação interativa
 
-Swagger UI: `http://localhost:8080/swagger-ui.html`
-OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+Swagger UI: `http://localhost:8080/controle-estoque/swagger-ui.html`
+OpenAPI JSON: `http://localhost:8080/controle-estoque/v3/api-docs`
 
 ## Principais endpoints
 
@@ -191,7 +191,7 @@ logging:
     org.hibernate.SQL: DEBUG
 ```
 
-> **Reconstrua com `mvn clean package` (ou `mvn clean spring-boot:run`), não apenas `package`/`spring-boot:run`.** Build incremental neste projeto (MapStruct + Lombok gerando código a cada compilação) pode deixar classes de mapper desatualizadas e produzir um erro do Hibernate sem nenhuma relação com o experimento que você está rodando — se aparecer algo estranho, primeiro tente `mvn clean package` antes de desconfiar do próprio código.
+> **Reconstrua com `mvn clean package` (ou `mvn clean package cargo:run`), não apenas `package`/`cargo:run`.** Build incremental neste projeto (MapStruct + Lombok gerando código a cada compilação) pode deixar classes de mapper desatualizadas e produzir um erro do Hibernate sem nenhuma relação com o experimento que você está rodando — se aparecer algo estranho, primeiro tente `mvn clean package` antes de desconfiar do próprio código.
 
 ### Experimento 1 — fazer o N+1 aparecer
 
@@ -264,14 +264,14 @@ Sem alterar código nenhum:
 
 ```bash
 # 401 — não sei quem você é
-curl -i http://localhost:8080/api/v1/produtos
+curl -i http://localhost:8080/controle-estoque/api/v1/produtos
 
 # login como ADMIN e criação de um OPERADOR
-TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
+TOKEN=$(curl -s -X POST http://localhost:8080/controle-estoque/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@estoque.com","senha":"admin123"}' | jq -r .token)
 
-curl -s -X POST http://localhost:8080/api/v1/funcionarios \
+curl -s -X POST http://localhost:8080/controle-estoque/api/v1/funcionarios \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"nome":"Op","sobrenome":"Teste","cpf":"99988877766","email":"op@estoque.com",
        "senha":"operador123","matricula":"F002","dataAdmissao":"2026-01-10",
@@ -280,11 +280,11 @@ curl -s -X POST http://localhost:8080/api/v1/funcionarios \
                     "cidade":"Curitiba","estado":"PR","cep":"80000-000"}}'
 
 # 403 — sei quem você é, e você não pode criar produto
-OP=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
+OP=$(curl -s -X POST http://localhost:8080/controle-estoque/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"op@estoque.com","senha":"operador123"}' | jq -r .token)
 
-curl -i -X POST http://localhost:8080/api/v1/produtos \
+curl -i -X POST http://localhost:8080/controle-estoque/api/v1/produtos \
   -H "Authorization: Bearer $OP" -H "Content-Type: application/json" \
   -d '{"codigo":"X-1","nome":"Teste","categoriaId":1,"precoVenda":10.00,"estoqueMinimo":1}'
 ```
