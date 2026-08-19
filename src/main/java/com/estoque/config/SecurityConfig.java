@@ -20,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
@@ -33,13 +34,15 @@ public class SecurityConfig {
     // em APIs REST públicas.
     //
     // AntPathRequestMatcher (não requestMatchers(String...) via MvcRequestMatcher) porque esta
-    // SecurityFilterChain guarda tanto /api/** quanto, a partir da Task 10, /faces/** — o FacesServlet
-    // do JSF nunca passa pelo DispatcherServlet/Spring MVC. MvcRequestMatcher exige um bean
+    // SecurityFilterChain roda no contexto raiz (WebAppInitializer), compartilhado entre REST e
+    // JSF — desde a Task 10, essa chain é uma entre três (@Order(1), escopada a /api/v1/** via
+    // securityMatcher; a segunda, jsfSecurityFilterChain, escopada a /faces/**; e a terceira,
+    // defaultDenyFilterChain, catch-all). MvcRequestMatcher exige um bean
     // mvcHandlerMappingIntrospector que só existe no contexto filho do DispatcherServlet (WebConfig),
-    // mas SecurityConfig vive no contexto raiz (WebAppInitializer), compartilhado entre REST e JSF —
-    // então esse bean não é visível aqui em runtime real (só nos testes, que carregam WebConfig e
-    // SecurityConfig juntos num único contexto achatado). AntPathRequestMatcher casa
-    // getServletPath()+getPathInfo() diretamente, sem depender do Spring MVC.
+    // mas SecurityConfig vive no contexto raiz — então esse bean não é visível aqui em runtime real
+    // (só nos testes, que carregam WebConfig e SecurityConfig juntos num único contexto achatado).
+    // AntPathRequestMatcher casa getServletPath()+getPathInfo() diretamente, sem depender do
+    // Spring MVC.
     private static final RequestMatcher[] ROTAS_PUBLICAS = {
             new AntPathRequestMatcher("/api/v1/auth/login"),
             new AntPathRequestMatcher("/swagger-ui.html"),
@@ -61,7 +64,19 @@ public class SecurityConfig {
         boolean producao = environment.matchesProfiles("oracle");
 
         http
-                .securityMatcher(new AntPathRequestMatcher("/api/v1/**"))
+                // OrRequestMatcher, não apenas /api/v1/**: /swagger-ui.html, /swagger-ui/** e
+                // /v3/api-docs/** (três das quatro entradas de ROTAS_PUBLICAS) e /h2-console/**
+                // (ROTA_H2_CONSOLE) nunca estiveram sob /api/v1/**. Sem incluí-los aqui no
+                // securityMatcher desta chain, os permitAll() abaixo nunca seriam avaliados para
+                // essas rotas — elas cairiam na defaultDenyFilterChain (catch-all) e tomariam 403
+                // em vez do acesso público pretendido.
+                .securityMatcher(new OrRequestMatcher(
+                        new AntPathRequestMatcher("/api/v1/**"),
+                        new AntPathRequestMatcher("/swagger-ui.html"),
+                        new AntPathRequestMatcher("/swagger-ui/**"),
+                        new AntPathRequestMatcher("/v3/api-docs/**"),
+                        new AntPathRequestMatcher("/h2-console/**")
+                ))
                 .csrf(csrf -> csrf.disable())
                 .headers(headers -> {
                     // O console H2 é uma ferramenta de desenvolvimento que roda em um <frame>; a
@@ -111,6 +126,18 @@ public class SecurityConfig {
                         .permitAll())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
 
+        return http.build();
+    }
+
+    // Catch-all: sem securityMatcher(...), então o FilterChainProxy só avalia esta chain para
+    // requisições que as duas anteriores (@Order(1) /api/v1/**, @Order(2) /faces/**) não
+    // reivindicaram — a divisão em duas chains escopadas fez qualquer outra rota (ex.: um futuro
+    // /api/v2/**, ou paths acidentais) passar sem nenhuma SecurityFilterChain, sem autorização e
+    // sem os headers de segurança padrão. denyAll() fecha essa lacuna por padrão.
+    @Bean
+    @org.springframework.core.annotation.Order(3)
+    public SecurityFilterChain defaultDenyFilterChain(HttpSecurity http) throws Exception {
+        http.authorizeHttpRequests(auth -> auth.anyRequest().denyAll());
         return http.build();
     }
 
