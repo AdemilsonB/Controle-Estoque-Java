@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="jakarta.faces.html"
+      xmlns:f="jakarta.faces.core">
+<h:head>
+    <title>Novo produto — Controle de Estoque</title>
+</h:head>
+<h:body>
+    <h1>Novo produto</h1>
+    <h:messages />
+
+    <h:form id="formCadastro">
+        <h:panelGrid columns="2">
+            <h:outputLabel for="codigo" value="Código" />
+            <h:inputText id="codigo" value="#{produtoFormBean.codigo}" required="true" />
+
+            <h:outputLabel for="nome" value="Nome" />
+            <h:inputText id="nome" value="#{produtoFormBean.nome}" required="true" />
+
+            <h:outputLabel for="categoriaId" value="ID da categoria" />
+            <h:inputText id="categoriaId" value="#{produtoFormBean.categoriaId}" required="true" />
+
+            <h:outputLabel for="precoVenda" value="Preço de venda" />
+            <h:inputText id="precoVenda" value="#{produtoFormBean.precoVenda}" required="true" />
+
+            <h:outputLabel for="estoqueMinimo" value="Estoque mínimo" />
+            <h:inputText id="estoqueMinimo" value="#{produtoFormBean.estoqueMinimo}" />
+        </h:panelGrid>
+
+        <h:commandButton value="Salvar" action="#{produtoFormBean.criar}" />
+    </h:form>
+</h:body>
+</html>

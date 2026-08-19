@@ -5,11 +5,8 @@ RUN mvn -q dependency:go-offline
 COPY src ./src
 RUN mvn -q clean package -DskipTests
 
-FROM eclipse-temurin:17-jre
-WORKDIR /app
-RUN groupadd -r app && useradd -r -g app app
-COPY --from=build /app/target/controle-estoque-1.0.0.jar app.jar
-RUN chown app:app app.jar
-USER app
+FROM tomcat:10.1-jre17
+RUN rm -rf /usr/local/tomcat/webapps/ROOT
+COPY --from=build /app/target/controle-estoque.war /usr/local/tomcat/webapps/controle-estoque.war
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+CMD ["catalina.sh", "run"]

@@ -9,9 +9,13 @@ import com.estoque.repository.CategoriaRepository;
 import com.estoque.repository.ProdutoRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import com.estoque.config.PersistenceConfig;
+import com.estoque.config.FlywayConfig;
+import com.estoque.config.SecurityConfig;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -25,8 +29,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringJUnitConfig(classes = {PersistenceConfig.class, FlywayConfig.class, SecurityConfig.class})
 @ActiveProfiles("test")
+@TestPropertySource(properties = "spring.profiles.active=test")
 class SaidaConcorrenciaIT {
 
     @Autowired private SaidaService saidaService;

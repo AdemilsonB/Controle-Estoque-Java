@@ -2,13 +2,21 @@ package com.estoque.repository;
 
 import com.estoque.entity.Categoria;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.transaction.annotation.Transactional;
+import com.estoque.config.PersistenceConfig;
+import com.estoque.config.FlywayConfig;
+import com.estoque.config.SecurityConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest
+@SpringJUnitConfig(classes = {PersistenceConfig.class, FlywayConfig.class, SecurityConfig.class})
 @ActiveProfiles("test")
+@TestPropertySource(properties = "spring.profiles.active=test")
+@Transactional
 class CategoriaRepositoryTest {
 
     @org.springframework.beans.factory.annotation.Autowired

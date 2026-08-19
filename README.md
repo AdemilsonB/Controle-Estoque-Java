@@ -1,13 +1,14 @@
 # Controle de Estoque — API REST
 
-API REST em Spring Boot para controle de estoque: produtos, categorias, coleções, fornecedores, funcionários e movimentações de entrada/saída, com autenticação JWT, controle de concorrência e documentação OpenAPI.
+API REST em Spring Framework tradicional (sem Boot), empacotada como WAR e implantada em Tomcat 10.1, para controle de estoque: produtos, categorias, coleções, fornecedores, funcionários e movimentações de entrada/saída, com autenticação JWT, controle de concorrência e documentação OpenAPI. Além da API REST, o projeto também expõe telas JSF 4.0 (Mojarra) com beans gerenciados via CDI (Weld).
 
 > Projeto desenvolvido durante a graduação, na disciplina de Desenvolvimento Orientado a Objetos.
 
 ## Stack
 
-- Java 17 · Spring Boot 3.3 · Spring Web · Spring Data JPA · Spring Security 6 (JWT)
-- Flyway · H2 (dev/test) · PostgreSQL 16 (produção, via Docker Compose)
+- Java 17 · Spring Framework 6.1 (sem Boot), WAR em Tomcat 10.1 · Spring Data JPA · Spring Security 6 (JWT)
+- JSF 4.0 (Mojarra) + CDI (Weld)
+- Flyway · H2 (dev/test) · Oracle XE (produção, via Docker Compose)
 - springdoc-openapi (Swagger UI) · Bean Validation · MapStruct · Lombok
 - JUnit 5 · Mockito · MockMvc · Maven
 
@@ -30,18 +31,24 @@ GlobalExceptionHandler (ProblemDetail / RFC 7807)
 ## Como rodar localmente (H2, sem dependências externas)
 
 ```bash
-mvn spring-boot:run
+mvn clean package cargo:run
 ```
 
-A aplicação sobe em `http://localhost:8080` com banco H2 em memória e dados de seed já carregados (veja credenciais abaixo). Console H2 disponível em `http://localhost:8080/h2-console` (JDBC URL: `jdbc:h2:mem:estoque`).
+A aplicação sobe num Tomcat 10.1 embarcado via Cargo, em `http://localhost:8080/controle-estoque`,
+com banco H2 em memória e dados de seed já carregados.
 
-## Como rodar com PostgreSQL (Docker Compose)
+- API REST: `http://localhost:8080/controle-estoque/api/v1/**`
+- Telas JSF: `http://localhost:8080/controle-estoque/faces/produtos.xhtml`
+
+## Como rodar com Oracle (Docker Compose)
 
 ```bash
 docker compose up --build
 ```
 
-Sobe PostgreSQL 16 + a aplicação no perfil `prod`, executando as mesmas migrations Flyway usadas em desenvolvimento.
+Sobe Oracle XE + a aplicação no perfil `oracle`, executando migrations Flyway específicas para Oracle. A primeira subida do Oracle pode levar alguns minutos.
+
+> **Nota:** O perfil Oracle foi implementado e testado estaticamente contra o schema JPA, mas não pôde ser testado com uma instância Oracle de fato neste ambiente (Docker não está disponível aqui). A configuração está pronta para uso em ambientes com Docker.
 
 > **⚠️ Importante:** O valor de `JWT_SECRET` definido no `docker-compose.yml` é uma chave de demonstração/desenvolvimento. Antes de qualquer deploy em produção, substitua esse valor por uma chave segura gerada aleatoriamente.
 
@@ -51,10 +58,10 @@ Sobe PostgreSQL 16 + a aplicação no perfil `prod`, executando as mesmas migrat
 |---|---|---|
 | `admin@estoque.com` | `admin123` | `ADMIN` |
 
-> **⚠️ Importante:** essa conta e senha são exclusivamente para desenvolvimento local. Não as utilize como estão se o `docker compose`/perfil `prod` for apontado para um ambiente real acessível pela internet — troque a senha (e idealmente o e-mail) antes de qualquer deploy.
+> **⚠️ Importante:** essa conta e senha são exclusivamente para desenvolvimento local. Não as utilize como estão se o `docker compose`/perfil `oracle` for apontado para um ambiente real acessível pela internet — troque a senha (e idealmente o e-mail) antes de qualquer deploy.
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
+curl -X POST http://localhost:8080/controle-estoque/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@estoque.com","senha":"admin123"}'
 ```
@@ -63,8 +70,8 @@ A resposta traz o `token` JWT a ser enviado em `Authorization: Bearer <token>` n
 
 ## Documentação interativa
 
-Swagger UI: `http://localhost:8080/swagger-ui.html`
-OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+Swagger UI: `http://localhost:8080/controle-estoque/swagger-ui.html`
+OpenAPI JSON: `http://localhost:8080/controle-estoque/v3/api-docs`
 
 ## Principais endpoints
 
@@ -114,12 +121,14 @@ Cobre testes unitários de service (Mockito), testes de integração de controll
 
 ```
 src/main/java/com/estoque/
-├── config/         SecurityConfig, OpenApiConfig
+├── config/         PersistenceConfig, FlywayConfig, WebConfig, WebAppInitializer,
+│                   SecurityConfig, SecurityWebAppInitializer, OpenApiConfig
 ├── controller/      endpoints REST
 ├── dto/             request/response (records)
 ├── entity/           entidades JPA
 ├── enums/            Role, MotivoSaida
 ├── exception/         hierarquia de exceptions + GlobalExceptionHandler
+├── jsf/               managed beans JSF (ProdutoListBean, ProdutoFormBean)
 ├── mapper/            MapStruct + mapeador polimórfico de movimentações
 ├── repository/        Spring Data JPA
 ├── security/          JWT, UserDetailsService, filtros
@@ -141,13 +150,13 @@ Cada linha aponta o arquivo e a linha onde o conceito está demonstrado. A ideia
 |---|---|---|
 | Camadas: entrada → regra → dados | `controller/ProdutoController.java:32` → `service/impl/ProdutoServiceImpl.java:41` → `repository/ProdutoRepository.java:18` | O service não sabe quem o chamou. É por isso que uma segunda porta de entrada (uma tela, por exemplo) reaproveitaria a mesma regra sem reescrita. |
 | Injeção por construtor | `service/impl/ProdutoServiceImpl.java:32-38` | Sete dependências, todas `private final`, um único construtor (gerado por `@RequiredArgsConstructor`) — logo, sem `@Autowired`. Não existe injeção em campo em nenhum ponto do projeto. |
-| `@Value` lendo configuração | `security/JwtService.java:20` | Segredo e expiração vêm do `application.yml`, não hardcoded. |
+| `@Value` lendo configuração | `security/JwtService.java:20` | Segredo e expiração vêm dos arquivos `app*.properties`, carregados via `@PropertySource` em `config/PersistenceConfig.java:30`, não hardcoded. |
 | `@Transactional` na escrita | `service/impl/ProdutoServiceImpl.java:61` | Anotado no método público do service que representa a operação inteira — nunca no controller, nunca no repository. |
 | `@Transactional(readOnly = true)` | `service/impl/ProdutoServiceImpl.java:41` | Toda consulta do projeto usa. Desliga o dirty checking. |
 | Regra de negócio na entidade | `entity/Produto.java:111` e `:122` | `registrarEntrada`/`registrarSaida` — o service orquestra, a entidade decide. |
 | N+1 e a solução declarativa | `repository/ProdutoRepository.java:18` e `:21` | `@EntityGraph` é o equivalente Spring Data do `JOIN FETCH`: uma consulta em vez de 1+N. Mesmo padrão em `EntradaRepository`, `SaidaRepository` e `MovimentacaoEstoqueRepository`. |
 | `FetchType.LAZY` explícito | `entity/Produto.java:49`, `:53`, `:57` | Todo `@ManyToOne` é LAZY aqui, contrariando o padrão EAGER da JPA — por isso o `@EntityGraph` acima é necessário. |
-| `LazyInitializationException` (terreno) | `application.yml:12` (`open-in-view: false`) | Com a sessão fechando no fim do service, tocar um LAZY no controller estoura. Ver Experimento 2. |
+| `LazyInitializationException` (terreno) | `config/PersistenceConfig.java:63` (sem `OpenEntityManagerInViewFilter` registrado em `WebAppInitializer`) | Com a sessão fechando no fim do service, tocar um LAZY no controller estoura. Ver Experimento 2. |
 | `@Enumerated(STRING)` | `entity/Funcionario.java:67`, `entity/Saida.java:22` | Grava `VENDA`, não `0`. Ver Experimento 5 para o que acontece com ORDINAL. |
 | Herança `JOINED` | `entity/MovimentacaoEstoque.java:25` | Entrada e Saída em uma consulta polimórfica só (o kardex). |
 | Lock otimista e o `409` | `entity/Produto.java:75` (`@Version`) + `service/impl/SaidaServiceImpl.java:46` | O bloco de comentário nas linhas 38-44 explica o *lost update* que o `@Version` impede. Prova executável em `SaidaConcorrenciaIT.java:37`. |
@@ -159,14 +168,15 @@ Cada linha aponta o arquivo e a linha onde o conceito está demonstrado. A ideia
 | `@Valid` disparando Bean Validation | `controller/ProdutoController.java:49` | Erros viram `400` com os campos, em `GlobalExceptionHandler.java:56`. |
 | `BigDecimal` com escala explícita | `entity/Produto.java:117` | `setScale(2, RoundingMode.HALF_UP)` no custo médio ponderado. |
 | `equals`/`hashCode` pela chave de negócio | `entity/Produto.java:32` e `:40` (mesmo padrão em `Categoria`, `Colecao`, `Fornecedor`, `Funcionario`) | `@EqualsAndHashCode(onlyExplicitlyIncluded = true)` do Lombok, incluindo só o campo de negócio — nunca todos os campos, nunca o `id`. Testado em `entity/ProdutoTest.java`; ver Experimento 7 para o efeito de remover. |
+| Ciclo de vida do JSF | `jsf/ProdutoFormBean.java:criar()` + `produto-form.xhtml` | Submeter o form sem preencher `codigo` (campo `required="true"`) força o desvio da fase 3 (Process Validations) direto pra fase 6 (Render Response) — a action `criar()` nunca roda. |
+| Escopos de managed bean | `jsf/ProdutoListBean.java` (`@ViewScoped`) | Paginar (Próxima/Anterior) sem perder a página atual — sobrevive ao postback. Ver Experimento novo abaixo pra ver o bug ao trocar pra `@RequestScoped`. |
+| Spring beans dentro de managed beans JSF | `jsf/ProdutoListBean.java:iniciar()` | `SpringBeanAutowiringSupport.processInjectionBasedOnServletContext(this, servletContext)` — a ponte entre o container CDI (Weld) e o `ApplicationContext` do Spring, sem `SpringBeanFacesELResolver`. |
+| Oracle real (não só teórico) | `db/migration/oracle/V4__schema_produto.sql` vs. `db/migration/h2/V4__schema_produto.sql` | Os dois arquivos lado a lado mostram o diff de sintaxe do guia (seção 11) acontecendo de verdade no mesmo projeto: `BIGINT`→`NUMBER(19)`, `VARCHAR`→`VARCHAR2`, `BOOLEAN`→`NUMBER(1,0)`. |
 
 ### O que este projeto **não** demonstra
 
 Estas seções do guia não têm contrapartida no código — estude-as pela teoria, sem procurar no repositório:
 
-- **Ciclo de vida do JSF e escopos de managed bean** (seções 3 e 4): o projeto é REST puro, não há uma única página `.xhtml`.
-- **Oracle** (seção 11): a persistência é H2 em desenvolvimento e PostgreSQL em produção. Nenhum `ojdbc`, nenhuma `SEQUENCE`, nenhum `ROWNUM`.
-- **Spring tradicional em WAR**: aqui é Spring Boot com jar executável e Tomcat embarcado.
 - **Lock pessimista** (`SELECT ... FOR UPDATE`): o projeto resolve concorrência com lock **otimista**. Vale saber justificar a escolha — está em "Decisões de design".
 - **`REQUIRES_NEW` e `rollbackFor`**: não há caso de uso no projeto. O Experimento 4 força o cenário de rollback para você ver o commit indevido acontecer.
 
@@ -176,14 +186,14 @@ O conceito gruda quando você vê o bug acontecer. Todos são reversíveis com `
 
 Antes de começar, ligue o log de SQL — vários experimentos dependem de **contar consultas**:
 
-```yaml
-# application.yml
-logging:
-  level:
-    org.hibernate.SQL: DEBUG
+```xml
+<!-- src/main/resources/logback.xml -->
+<logger name="org.hibernate.SQL" level="DEBUG"/>
 ```
 
-> **Reconstrua com `mvn clean package` (ou `mvn clean spring-boot:run`), não apenas `package`/`spring-boot:run`.** Build incremental neste projeto (MapStruct + Lombok gerando código a cada compilação) pode deixar classes de mapper desatualizadas e produzir um erro do Hibernate sem nenhuma relação com o experimento que você está rodando — se aparecer algo estranho, primeiro tente `mvn clean package` antes de desconfiar do próprio código.
+Ajuste o nível do logger `org.hibernate.SQL` em `src/main/resources/logback.xml` (ele já existe no arquivo, em `WARN` por padrão) e reconstrua com `mvn clean package`.
+
+> **Reconstrua com `mvn clean package` (ou `mvn clean package cargo:run`), não apenas `package`/`cargo:run`.** Build incremental neste projeto (MapStruct + Lombok gerando código a cada compilação) pode deixar classes de mapper desatualizadas e produzir um erro do Hibernate sem nenhuma relação com o experimento que você está rodando — se aparecer algo estranho, primeiro tente `mvn clean package` antes de desconfiar do próprio código.
 
 ### Experimento 1 — fazer o N+1 aparecer
 
@@ -203,7 +213,7 @@ logging:
 1. Em `service/impl/ProdutoServiceImpl.java:47`, troque o retorno de `buscarPorId` para devolver a entidade `Produto` crua em vez do DTO (e ajuste o controller para chamar `produto.getCategoria().getNome()`).
 2. Chame `GET /api/v1/produtos/1`.
 
-**Esperado:** `LazyInitializationException`. A transação termina no fim do método do service e, com `open-in-view: false` (`application.yml:12`), a sessão fecha junto — o acesso ao LAZY acontece tarde demais. Ligue `open-in-view: true` e veja o erro sumir: é exatamente por isso que muito projeto legado mantém essa configuração ligada, mascarando N+1 na camada de tela.
+**Esperado:** `LazyInitializationException`. A transação termina no fim do método do service e, como `WebAppInitializer` nunca registra um `OpenEntityManagerInViewFilter` (o equivalente tradicional a `open-in-view: false` do Boot — ver comentário em `config/PersistenceConfig.java:63`), a sessão fecha junto — o acesso ao LAZY acontece tarde demais. Não há mais uma propriedade de configuração para simplesmente inverter e "ver o erro sumir": reproduzir o comportamento oposto exigiria registrar de fato um `OpenEntityManagerInViewFilter` em `WebAppInitializer`, o que é exatamente por que muito projeto legado mantém esse filtro ligado, mascarando N+1 na camada de tela.
 
 **Âncora que treina:** *Acessou o LAZY fora da transação e a sessão já fechou.*
 
@@ -246,7 +256,7 @@ Variante que vale rodar logo em seguida: capture a exceção dentro do método c
 1. Em `entity/Saida.java:22`, troque `EnumType.STRING` por `EnumType.ORDINAL`.
 2. Suba a aplicação.
 
-**Esperado:** a aplicação **nem sobe**. Com `ddl-auto: validate`, o Hibernate compara o mapeamento com o schema real e encontra `motivo VARCHAR(20)` (`V5__schema_movimentacao.sql:18`) onde ORDINAL exigiria um inteiro. É o melhor cenário possível: falha na subida, não em produção. Em um projeto sem `validate`, o mesmo erro passaria batido até alguém inserir um valor no meio do enum e corromper o histórico inteiro.
+**Esperado:** a aplicação **nem sobe**. Com `hibernate.hbm2ddl.auto=validate` (`config/PersistenceConfig.java:61`), o Hibernate compara o mapeamento com o schema real e encontra `motivo VARCHAR(20)` (`db/migration/h2/V5__schema_movimentacao.sql:18`) onde ORDINAL exigiria um inteiro. É o melhor cenário possível: falha na subida, não em produção. Em um projeto sem `validate`, o mesmo erro passaria batido até alguém inserir um valor no meio do enum e corromper o histórico inteiro.
 
 **Âncora que treina:** *Sempre STRING, nunca ORDINAL.*
 
@@ -256,14 +266,14 @@ Sem alterar código nenhum:
 
 ```bash
 # 401 — não sei quem você é
-curl -i http://localhost:8080/api/v1/produtos
+curl -i http://localhost:8080/controle-estoque/api/v1/produtos
 
 # login como ADMIN e criação de um OPERADOR
-TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
+TOKEN=$(curl -s -X POST http://localhost:8080/controle-estoque/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@estoque.com","senha":"admin123"}' | jq -r .token)
 
-curl -s -X POST http://localhost:8080/api/v1/funcionarios \
+curl -s -X POST http://localhost:8080/controle-estoque/api/v1/funcionarios \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"nome":"Op","sobrenome":"Teste","cpf":"99988877766","email":"op@estoque.com",
        "senha":"operador123","matricula":"F002","dataAdmissao":"2026-01-10",
@@ -272,11 +282,11 @@ curl -s -X POST http://localhost:8080/api/v1/funcionarios \
                     "cidade":"Curitiba","estado":"PR","cep":"80000-000"}}'
 
 # 403 — sei quem você é, e você não pode criar produto
-OP=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
+OP=$(curl -s -X POST http://localhost:8080/controle-estoque/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"op@estoque.com","senha":"operador123"}' | jq -r .token)
 
-curl -i -X POST http://localhost:8080/api/v1/produtos \
+curl -i -X POST http://localhost:8080/controle-estoque/api/v1/produtos \
   -H "Authorization: Bearer $OP" -H "Content-Type: application/json" \
   -d '{"codigo":"X-1","nome":"Teste","categoriaId":1,"precoVenda":10.00,"estoqueMinimo":1}'
 ```
@@ -319,6 +329,15 @@ new java.math.BigDecimal("10.0").compareTo(new java.math.BigDecimal("10.00"))  /
 **Esperado:** o teste **falha**. Ele dispara 5 threads pedindo 3 unidades cada sobre um estoque de 10 e afirma que o total vendido nunca ultrapassa o disponível (`SaidaConcorrenciaIT.java:84`). Sem `@Version`, as threads leem o mesmo saldo e sobrescrevem umas às outras — *lost update* clássico, e o estoque fica negativo. A coluna `version` tem `DEFAULT 0` na migration, então nada quebra no banco: o bug é puramente de concorrência.
 
 **Âncora que treina:** *Lock otimista: a segunda gravação falha em vez de sobrescrever.*
+
+### Experimento 10 — `@ViewScoped` virando `@RequestScoped`
+
+1. Em `jsf/ProdutoListBean.java`, trocar `import jakarta.faces.view.ViewScoped;` por `import jakarta.enterprise.context.RequestScoped;`, e a anotação `@ViewScoped` por `@RequestScoped`.
+2. Rodar `mvn clean package cargo:run`, acessar `/faces/produtos.xhtml`, clicar em "Próxima".
+
+**Esperado:** a tabela aparece vazia (ou volta pra página 0) a cada clique — o bean é recriado do zero a cada requisição, perdendo `paginaAtual`. É exatamente a "pergunta clássica de gestor" do guia: "a lista da tela some quando o usuário clica no botão de filtrar".
+
+**Âncora que treina:** *Request morre na requisição · View sobrevive ao postback.*
 
 ## Roadmap
 

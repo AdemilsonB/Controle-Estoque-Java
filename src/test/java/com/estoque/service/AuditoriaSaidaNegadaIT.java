@@ -12,8 +12,12 @@ import com.estoque.repository.SaidaRepository;
 import com.estoque.repository.TentativaSaidaNegadaRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import com.estoque.config.PersistenceConfig;
+import com.estoque.config.FlywayConfig;
+import com.estoque.config.SecurityConfig;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -25,8 +29,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Prova de que a auditoria de tentativa negada usa {@code Propagation.REQUIRES_NEW}: o registro de
  * auditoria sobrevive ao rollback da transação principal (que falhou por estoque insuficiente).
  */
-@SpringBootTest
+@SpringJUnitConfig(classes = {PersistenceConfig.class, FlywayConfig.class, SecurityConfig.class})
 @ActiveProfiles("test")
+@TestPropertySource(properties = "spring.profiles.active=test")
 class AuditoriaSaidaNegadaIT {
 
     @Autowired private SaidaService saidaService;

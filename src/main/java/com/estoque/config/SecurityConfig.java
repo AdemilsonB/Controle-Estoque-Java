@@ -10,7 +10,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -19,24 +18,42 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+// @EnableMethodSecurity NÃO vive aqui — ver comentário em WebConfig.java. Este contexto (raiz,
+// via ContextLoaderListener) não contém nenhum bean anotado com @PreAuthorize; todos os
+// @RestController do projeto são escaneados no contexto filho (WebConfig), que é onde a
+// infraestrutura de interceptor de @EnableMethodSecurity precisa estar para realmente envolver
+// esses beans.
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     // Publicadas em todos os perfis, inclusive produção: login é sempre público, e expor a
     // documentação OpenAPI/Swagger para consumidores da API é uma escolha deliberada e comum
     // em APIs REST públicas.
-    private static final String[] ROTAS_PUBLICAS = {
-            "/api/v1/auth/login",
-            "/swagger-ui.html",
-            "/swagger-ui/**",
-            "/v3/api-docs/**"
+    //
+    // AntPathRequestMatcher (não requestMatchers(String...) via MvcRequestMatcher) porque esta
+    // SecurityFilterChain roda no contexto raiz (WebAppInitializer), compartilhado entre REST e
+    // JSF — desde a Task 10, essa chain é uma entre três (@Order(1), escopada a /api/v1/** via
+    // securityMatcher; a segunda, jsfSecurityFilterChain, escopada a /faces/**; e a terceira,
+    // defaultDenyFilterChain, catch-all). MvcRequestMatcher exige um bean
+    // mvcHandlerMappingIntrospector que só existe no contexto filho do DispatcherServlet (WebConfig),
+    // mas SecurityConfig vive no contexto raiz — então esse bean não é visível aqui em runtime real
+    // (só nos testes, que carregam WebConfig e SecurityConfig juntos num único contexto achatado).
+    // AntPathRequestMatcher casa getServletPath()+getPathInfo() diretamente, sem depender do
+    // Spring MVC.
+    private static final RequestMatcher[] ROTAS_PUBLICAS = {
+            new AntPathRequestMatcher("/api/v1/auth/login"),
+            new AntPathRequestMatcher("/swagger-ui.html"),
+            new AntPathRequestMatcher("/swagger-ui/**"),
+            new AntPathRequestMatcher("/v3/api-docs/**")
     };
 
-    private static final String ROTA_H2_CONSOLE = "/h2-console/**";
+    private static final RequestMatcher ROTA_H2_CONSOLE = new AntPathRequestMatcher("/h2-console/**");
 
     private final JwtAuthFilter jwtAuthFilter;
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
@@ -45,10 +62,24 @@ public class SecurityConfig {
     private final Environment environment;
 
     @Bean
+    @org.springframework.core.annotation.Order(1)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        boolean producao = environment.matchesProfiles("prod");
+        boolean producao = environment.matchesProfiles("oracle");
 
         http
+                // OrRequestMatcher, não apenas /api/v1/**: /swagger-ui.html, /swagger-ui/** e
+                // /v3/api-docs/** (três das quatro entradas de ROTAS_PUBLICAS) e /h2-console/**
+                // (ROTA_H2_CONSOLE) nunca estiveram sob /api/v1/**. Sem incluí-los aqui no
+                // securityMatcher desta chain, os permitAll() abaixo nunca seriam avaliados para
+                // essas rotas — elas cairiam na defaultDenyFilterChain (catch-all) e tomariam 403
+                // em vez do acesso público pretendido.
+                .securityMatcher(new OrRequestMatcher(
+                        new AntPathRequestMatcher("/api/v1/**"),
+                        new AntPathRequestMatcher("/swagger-ui.html"),
+                        new AntPathRequestMatcher("/swagger-ui/**"),
+                        new AntPathRequestMatcher("/v3/api-docs/**"),
+                        new AntPathRequestMatcher("/h2-console/**")
+                ))
                 .csrf(csrf -> csrf.disable())
                 .headers(headers -> {
                     // O console H2 é uma ferramenta de desenvolvimento que roda em um <frame>; a
@@ -71,6 +102,53 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
+        return http.build();
+    }
+
+    @Bean
+    @org.springframework.core.annotation.Order(2)
+    public SecurityFilterChain jsfSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                // AntPathRequestMatcher (não requestMatchers(String...)/securityMatcher(String...) via
+                // MvcRequestMatcher) pela mesma razão documentada em ROTAS_PUBLICAS acima: essa chain
+                // roda no contexto raiz, onde o bean mvcHandlerMappingIntrospector não existe em
+                // runtime real.
+                .securityMatcher(new AntPathRequestMatcher("/faces/**"))
+                // login.xhtml é um <form> HTML puro, sem token CSRF — diferente da chain REST
+                // (onde CSRF é genuinamente inaplicável por ser STATELESS, sem sessão/cookie),
+                // esta chain É baseada em sessão/cookie (SessionCreationPolicy.IF_REQUIRED),
+                // exatamente o cenário para o qual a proteção CSRF existe. Desabilitar aqui é uma
+                // concessão deliberada ao escopo de demonstração deste projeto, não uma postura
+                // production-grade: uma correção completa exigiria adicionar token CSRF ao form
+                // de login e ao form de criação de produto. Sem desabilitar, o POST para
+                // j_spring_security_check tomaria 403 por falta de token.
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(new AntPathRequestMatcher("/faces/login.xhtml"),
+                                new AntPathRequestMatcher("/faces/jakarta.faces.resource/**")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/faces/produto-form.xhtml")).hasRole("ADMIN")
+                        .anyRequest().authenticated())
+                .formLogin(form -> form
+                        .loginPage("/faces/login.xhtml")
+                        .loginProcessingUrl("/faces/j_spring_security_check")
+                        .defaultSuccessUrl("/faces/produtos.xhtml", true)
+                        .permitAll())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
+
+        return http.build();
+    }
+
+    // Catch-all: sem securityMatcher(...), então o FilterChainProxy só avalia esta chain para
+    // requisições que as duas anteriores não reivindicaram — @Order(1) cobre /api/v1/** mais os
+    // caminhos utilitários públicos (/swagger-ui.html, /swagger-ui/**, /v3/api-docs/** e, fora do
+    // perfil oracle, /h2-console/**), e @Order(2) cobre /faces/**. A divisão em chains escopadas
+    // fez qualquer outra rota (ex.: um futuro /api/v2/**, ou paths acidentais) passar sem nenhuma
+    // SecurityFilterChain, sem autorização e sem os headers de segurança padrão. denyAll() fecha
+    // essa lacuna por padrão.
+    @Bean
+    @org.springframework.core.annotation.Order(3)
+    public SecurityFilterChain defaultDenyFilterChain(HttpSecurity http) throws Exception {
+        http.authorizeHttpRequests(auth -> auth.anyRequest().denyAll());
         return http.build();
     }
 
