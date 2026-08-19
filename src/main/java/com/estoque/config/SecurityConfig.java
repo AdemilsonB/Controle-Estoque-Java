@@ -111,13 +111,19 @@ public class SecurityConfig {
                 // roda no contexto raiz, onde o bean mvcHandlerMappingIntrospector não existe em
                 // runtime real.
                 .securityMatcher(new AntPathRequestMatcher("/faces/**"))
-                // login.xhtml é um <form> HTML puro, sem token CSRF — desabilitar aqui replica a
-                // mesma postura que a chain REST já tem (.csrf(csrf -> csrf.disable()) acima).
-                // Sem isso, o POST para j_spring_security_check tomaria 403 por falta de token.
+                // login.xhtml é um <form> HTML puro, sem token CSRF — diferente da chain REST
+                // (onde CSRF é genuinamente inaplicável por ser STATELESS, sem sessão/cookie),
+                // esta chain É baseada em sessão/cookie (SessionCreationPolicy.IF_REQUIRED),
+                // exatamente o cenário para o qual a proteção CSRF existe. Desabilitar aqui é uma
+                // concessão deliberada ao escopo de demonstração deste projeto, não uma postura
+                // production-grade: uma correção completa exigiria adicionar token CSRF ao form
+                // de login e ao form de criação de produto. Sem desabilitar, o POST para
+                // j_spring_security_check tomaria 403 por falta de token.
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(new AntPathRequestMatcher("/faces/login.xhtml"),
                                 new AntPathRequestMatcher("/faces/jakarta.faces.resource/**")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/faces/produto-form.xhtml")).hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/faces/login.xhtml")
@@ -130,10 +136,12 @@ public class SecurityConfig {
     }
 
     // Catch-all: sem securityMatcher(...), então o FilterChainProxy só avalia esta chain para
-    // requisições que as duas anteriores (@Order(1) /api/v1/**, @Order(2) /faces/**) não
-    // reivindicaram — a divisão em duas chains escopadas fez qualquer outra rota (ex.: um futuro
-    // /api/v2/**, ou paths acidentais) passar sem nenhuma SecurityFilterChain, sem autorização e
-    // sem os headers de segurança padrão. denyAll() fecha essa lacuna por padrão.
+    // requisições que as duas anteriores não reivindicaram — @Order(1) cobre /api/v1/** mais os
+    // caminhos utilitários públicos (/swagger-ui.html, /swagger-ui/**, /v3/api-docs/** e, fora do
+    // perfil oracle, /h2-console/**), e @Order(2) cobre /faces/**. A divisão em chains escopadas
+    // fez qualquer outra rota (ex.: um futuro /api/v2/**, ou paths acidentais) passar sem nenhuma
+    // SecurityFilterChain, sem autorização e sem os headers de segurança padrão. denyAll() fecha
+    // essa lacuna por padrão.
     @Bean
     @org.springframework.core.annotation.Order(3)
     public SecurityFilterChain defaultDenyFilterChain(HttpSecurity http) throws Exception {
