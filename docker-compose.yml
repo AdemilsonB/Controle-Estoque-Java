@@ -1,33 +1,31 @@
 services:
-  postgres:
-    image: postgres:16
+  oracle:
+    image: gvenzl/oracle-xe:21-slim
     environment:
-      POSTGRES_DB: estoque
-      POSTGRES_USER: estoque
-      POSTGRES_PASSWORD: estoque
+      ORACLE_PASSWORD: estoque
+      APP_USER: estoque
+      APP_USER_PASSWORD: estoque
     ports:
-      - "5432:5432"
+      - "1521:1521"
     volumes:
-      - estoque-postgres-data:/var/lib/postgresql/data
+      - estoque-oracle-data:/opt/oracle/oradata
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U estoque"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
 
   app:
     build: .
     depends_on:
-      postgres:
+      oracle:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/estoque
-      SPRING_DATASOURCE_USERNAME: estoque
-      SPRING_DATASOURCE_PASSWORD: estoque
+      SPRING_PROFILES_ACTIVE: oracle
       JWT_SECRET: MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODk=
     ports:
       - "8080:8080"
 
 volumes:
-  estoque-postgres-data:
+  estoque-oracle-data:
