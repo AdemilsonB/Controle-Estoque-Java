@@ -30,18 +30,24 @@ GlobalExceptionHandler (ProblemDetail / RFC 7807)
 ## Como rodar localmente (H2, sem dependências externas)
 
 ```bash
-mvn spring-boot:run
+mvn clean package cargo:run
 ```
 
-A aplicação sobe em `http://localhost:8080` com banco H2 em memória e dados de seed já carregados (veja credenciais abaixo). Console H2 disponível em `http://localhost:8080/h2-console` (JDBC URL: `jdbc:h2:mem:estoque`).
+A aplicação sobe num Tomcat 10.1 embarcado via Cargo, em `http://localhost:8080/controle-estoque`,
+com banco H2 em memória e dados de seed já carregados.
 
-## Como rodar com PostgreSQL (Docker Compose)
+- API REST: `http://localhost:8080/controle-estoque/api/v1/**`
+- Telas JSF: `http://localhost:8080/controle-estoque/faces/produtos.xhtml`
+
+## Como rodar com Oracle (Docker Compose)
 
 ```bash
 docker compose up --build
 ```
 
-Sobe PostgreSQL 16 + a aplicação no perfil `prod`, executando as mesmas migrations Flyway usadas em desenvolvimento.
+Sobe Oracle XE + a aplicação no perfil `oracle`, executando migrations Flyway específicas para Oracle. A primeira subida do Oracle pode levar alguns minutos.
+
+> **Nota:** O perfil Oracle foi implementado e testado estaticamente contra o schema JPA, mas não pôde ser testado com uma instância Oracle de fato neste ambiente (Docker não está disponível aqui). A configuração está pronta para uso em ambientes com Docker.
 
 > **⚠️ Importante:** O valor de `JWT_SECRET` definido no `docker-compose.yml` é uma chave de demonstração/desenvolvimento. Antes de qualquer deploy em produção, substitua esse valor por uma chave segura gerada aleatoriamente.
 
@@ -159,13 +165,15 @@ Cada linha aponta o arquivo e a linha onde o conceito está demonstrado. A ideia
 | `@Valid` disparando Bean Validation | `controller/ProdutoController.java:49` | Erros viram `400` com os campos, em `GlobalExceptionHandler.java:56`. |
 | `BigDecimal` com escala explícita | `entity/Produto.java:117` | `setScale(2, RoundingMode.HALF_UP)` no custo médio ponderado. |
 | `equals`/`hashCode` pela chave de negócio | `entity/Produto.java:32` e `:40` (mesmo padrão em `Categoria`, `Colecao`, `Fornecedor`, `Funcionario`) | `@EqualsAndHashCode(onlyExplicitlyIncluded = true)` do Lombok, incluindo só o campo de negócio — nunca todos os campos, nunca o `id`. Testado em `entity/ProdutoTest.java`; ver Experimento 7 para o efeito de remover. |
+| Ciclo de vida do JSF | `jsf/ProdutoFormBean.java:criar()` + `produto-form.xhtml` | Submeter o form sem preencher `codigo` (campo `required="true"`) força o desvio da fase 3 (Process Validations) direto pra fase 6 (Render Response) — a action `criar()` nunca roda. |
+| Escopos de managed bean | `jsf/ProdutoListBean.java` (`@ViewScoped`) | Paginar (Próxima/Anterior) sem perder a página atual — sobrevive ao postback. Ver Experimento novo abaixo pra ver o bug ao trocar pra `@RequestScoped`. |
+| Spring beans dentro de managed beans JSF | `jsf/ProdutoListBean.java:iniciar()` | `SpringBeanAutowiringSupport.processInjectionBasedOnServletContext(this, servletContext)` — a ponte entre o container CDI (Weld) e o `ApplicationContext` do Spring, sem `SpringBeanFacesELResolver`. |
+| Oracle real (não só teórico) | `db/migration/oracle/V4__schema_produto.sql` vs. `db/migration/h2/V4__schema_produto.sql` | Os dois arquivos lado a lado mostram o diff de sintaxe do guia (seção 11) acontecendo de verdade no mesmo projeto: `BIGINT`→`NUMBER(19)`, `VARCHAR`→`VARCHAR2`, `BOOLEAN`→`NUMBER(1,0)`. |
 
 ### O que este projeto **não** demonstra
 
 Estas seções do guia não têm contrapartida no código — estude-as pela teoria, sem procurar no repositório:
 
-- **Ciclo de vida do JSF e escopos de managed bean** (seções 3 e 4): o projeto é REST puro, não há uma única página `.xhtml`.
-- **Oracle** (seção 11): a persistência é H2 em desenvolvimento e PostgreSQL em produção. Nenhum `ojdbc`, nenhuma `SEQUENCE`, nenhum `ROWNUM`.
 - **Spring tradicional em WAR**: aqui é Spring Boot com jar executável e Tomcat embarcado.
 - **Lock pessimista** (`SELECT ... FOR UPDATE`): o projeto resolve concorrência com lock **otimista**. Vale saber justificar a escolha — está em "Decisões de design".
 - **`REQUIRES_NEW` e `rollbackFor`**: não há caso de uso no projeto. O Experimento 4 força o cenário de rollback para você ver o commit indevido acontecer.
@@ -319,6 +327,15 @@ new java.math.BigDecimal("10.0").compareTo(new java.math.BigDecimal("10.00"))  /
 **Esperado:** o teste **falha**. Ele dispara 5 threads pedindo 3 unidades cada sobre um estoque de 10 e afirma que o total vendido nunca ultrapassa o disponível (`SaidaConcorrenciaIT.java:84`). Sem `@Version`, as threads leem o mesmo saldo e sobrescrevem umas às outras — *lost update* clássico, e o estoque fica negativo. A coluna `version` tem `DEFAULT 0` na migration, então nada quebra no banco: o bug é puramente de concorrência.
 
 **Âncora que treina:** *Lock otimista: a segunda gravação falha em vez de sobrescrever.*
+
+### Experimento 10 — `@ViewScoped` virando `@RequestScoped`
+
+1. Em `jsf/ProdutoListBean.java`, trocar `import jakarta.faces.view.ViewScoped;` por `import jakarta.enterprise.context.RequestScoped;`, e a anotação `@ViewScoped` por `@RequestScoped`.
+2. Rodar `mvn clean package cargo:run`, acessar `/faces/produtos.xhtml`, clicar em "Próxima".
+
+**Esperado:** a tabela aparece vazia (ou volta pra página 0) a cada clique — o bean é recriado do zero a cada requisição, perdendo `paginaAtual`. É exatamente a "pergunta clássica de gestor" do guia: "a lista da tela some quando o usuário clica no botão de filtrar".
+
+**Âncora que treina:** *Request morre na requisição · View sobrevive ao postback.*
 
 ## Roadmap
 
