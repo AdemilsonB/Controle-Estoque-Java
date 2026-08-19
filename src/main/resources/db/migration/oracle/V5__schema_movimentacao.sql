@@ -3,7 +3,7 @@ CREATE TABLE movimentacao_estoque (
     produto_id NUMBER(19) NOT NULL REFERENCES produto(id),
     funcionario_id NUMBER(19) NOT NULL REFERENCES funcionario(id),
     quantidade NUMBER(10) NOT NULL,
-    observacao VARCHAR2(255),
+    observacao VARCHAR2(255 CHAR),
     data_movimentacao TIMESTAMP NOT NULL
 );
 
@@ -15,5 +15,5 @@ CREATE TABLE entrada (
 
 CREATE TABLE saida (
     id NUMBER(19) PRIMARY KEY REFERENCES movimentacao_estoque(id),
-    motivo VARCHAR2(20) NOT NULL
+    motivo VARCHAR2(20 CHAR) NOT NULL
 );
